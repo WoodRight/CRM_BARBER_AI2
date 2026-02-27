@@ -10,7 +10,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 
 const AiHairstyleTryOnInputSchema = z.object({
   photoDataUri: z.string().describe("Фото пользователя в формате Data URI."),
@@ -25,7 +25,6 @@ export type AiHairstyleTryOnOutput = z.infer<typeof AiHairstyleTryOnOutputSchema
 
 /**
  * Карта соответствия названий причесок строковым идентификаторам AILabTools.
- * Используем только поддерживаемые строковые значения из официального списка API.
  */
 const STYLE_MAP: Record<string, string> = {
   "Фейд": "LowFade",
@@ -55,10 +54,10 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
     outputSchema: AiHairstyleTryOnOutputSchema,
   },
   async (input) => {
-    const apiKey = process.env.AILAB_API_KEY;
+    const apiKey = process.env.AILAB_API_KEY || "VjEL6M5wqiYtQZnJUeTRoK3LBuzpxIw3zWrAhtHGOaW0xDrlfdn9DAyFCFMGhj1N";
 
     if (!apiKey) {
-      throw new Error('API ключ AILabTools (AILAB_API_KEY) не найден в .env');
+      throw new Error('API ключ AILabTools не найден. Пожалуйста, проверьте настройки.');
     }
 
     // 1. Подготовка бинарных данных из Data URI
@@ -67,22 +66,23 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
       throw new Error('Некорректный формат изображения.');
     }
     const base64Data = parts[1];
-    const buffer = Buffer.from(base64Data, 'base64');
+    const mimeMatch = parts[0].match(/:(.*?);/);
+    const contentType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
     
-    // Создаем объект File для корректной работы multipart/form-data в Node.js
-    const file = new File([buffer], 'user_photo.jpg', { type: 'image/jpeg' });
+    const buffer = Buffer.from(base64Data, 'base64');
+    const blob = new Blob([buffer], { type: contentType });
 
-    // Получаем корректный ID прически или используем BuzzCut как надежный стандарт
+    // Получаем корректный ID прически
     const styleId = STYLE_MAP[input.hairstyleDescription] || "BuzzCut";
 
     const formData = new FormData();
     formData.append('task_type', 'async');
-    formData.append('image', file);
+    formData.append('image', blob, 'image.jpg');
     formData.append('hair_style', styleId);
 
     try {
-      // 2. Создание асинхронной задачи
-      console.log('AILab: Creating task for style:', styleId);
+      console.log(`AILab: Отправка запроса на создание задачи (Стиль: ${styleId})...`);
+      
       const createResponse = await fetch('https://www.ailabapi.com/api/portrait/effects/hairstyle-editor-pro', {
         method: 'POST',
         headers: {
@@ -93,29 +93,28 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
 
       const createResult = await createResponse.json();
 
-      // Проверка на ошибки API или отсутствие данных
-      if (!createResult || createResult.error_code !== 0 || !createResult.data) {
-        console.error('AILab Create Task Error Payload:', createResult);
-        const errorMsg = createResult?.error_msg || createResult?.message || 'Сервер вернул пустой ответ или некорректные параметры';
-        throw new Error(`Ошибка API (${createResult?.error_code || 'Unknown'}): ${errorMsg}`);
+      // Проверка на ошибки сервера или API
+      if (!createResponse.ok || !createResult || createResult.error_code !== 0) {
+        console.error('AILab Create Task Error:', createResult);
+        const errorMsg = createResult?.error_msg || createResult?.message || `Ошибка сервера (HTTP ${createResponse.status})`;
+        throw new Error(`Ошибка API (${createResult?.error_code || createResponse.status}): ${errorMsg}`);
       }
 
-      const taskId = createResult.data.task_id;
+      const taskId = createResult.data?.task_id;
       if (!taskId) {
-        throw new Error('Сервер не вернул ID задачи. Попробуйте еще раз с другим фото.');
+        throw new Error('Сервер не вернул ID задачи. Попробуйте использовать другое фото.');
       }
 
-      console.log('AILab: Task created successfully. ID:', taskId);
+      console.log('AILab: Задача создана. ID:', taskId);
 
       // 3. Опрос (Polling) результата
       let resultImage = null;
       let attempts = 0;
-      const maxAttempts = 12; // Максимум 1 минута ожидания (12 * 5 сек)
+      const maxAttempts = 15; // Максимум 75 секунд
 
       while (attempts < maxAttempts) {
-        console.log(`AILab: Polling attempt ${attempts + 1}/${maxAttempts}...`);
+        console.log(`AILab: Проверка статуса (попытка ${attempts + 1}/${maxAttempts})...`);
         
-        // Ждем 5 секунд перед следующим опросом
         await new Promise(resolve => setTimeout(resolve, 5000));
         
         const pollResponse = await fetch(`https://www.ailabapi.com/api/common/get_async_result?task_id=${taskId}`, {
@@ -127,23 +126,23 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
 
         const pollResult = await pollResponse.json();
 
-        // Статус 2 означает успех
-        if (pollResult.data && pollResult.data.task_status === 2 && pollResult.data.result_list?.[0]?.image) {
-          resultImage = pollResult.data.result_list[0].image;
-          console.log('AILab: Success! Image generated.');
-          break;
-        } 
-        // Статус 3 означает ошибку обработки
-        else if (pollResult.data && pollResult.data.task_status === 3) {
-          console.error('AILab: Task processing failed.', pollResult);
-          throw new Error(`Ошибка обработки: ${pollResult.error_msg || 'Сервер отклонил фото (возможно, лицо не распознано)'}`);
+        // task_status: 2 - успех, 1 - в очереди/обработке, 3 - ошибка
+        if (pollResult.data && pollResult.data.task_status === 2) {
+          resultImage = pollResult.data.result_list?.[0]?.image;
+          if (resultImage) {
+            console.log('AILab: Фото успешно сгенерировано!');
+            break;
+          }
+        } else if (pollResult.data && pollResult.data.task_status === 3) {
+          const failMsg = pollResult.error_msg || 'Обработка не удалась (возможно, на фото не найдено лицо)';
+          throw new Error(`Ошибка обработки: ${failMsg}`);
         }
 
         attempts++;
       }
 
       if (!resultImage) {
-        throw new Error('Время ожидания обработки истекло. Попробуйте фото меньшего размера.');
+        throw new Error('Время ожидания истекло. Попробуйте еще раз с фото меньшего размера.');
       }
 
       return { 
@@ -151,8 +150,8 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
       };
 
     } catch (error: any) {
-      console.error('AILabTools Process Error:', error);
-      throw new Error(error.message || 'Произошла ошибка при связи с сервером AILabTools');
+      console.error('AILabTools Critical Error:', error);
+      throw new Error(error.message || 'Произошла ошибка при связи с сервером ИИ.');
     }
   }
 );
