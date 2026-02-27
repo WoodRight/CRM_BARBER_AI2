@@ -85,12 +85,18 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
       });
 
       if (!media || !media.url) {
-        throw new Error('Model did not return an image');
+        throw new Error('Модель не вернула изображение. Попробуйте другой стиль.');
       }
 
       return { generatedHairstyleImage: media.url };
     } catch (error: any) {
       console.error('Genkit error:', error);
+      
+      // Обработка лимитов API
+      if (error.message?.includes('RESOURCE_EXHAUSTED') || error.status === 429) {
+        throw new Error('Лимит запросов ИИ исчерпан. Пожалуйста, подождите 1-2 минуты и попробуйте снова.');
+      }
+      
       throw new Error(error.message || 'Ошибка при генерации прически. Попробуйте другое описание.');
     }
   }
