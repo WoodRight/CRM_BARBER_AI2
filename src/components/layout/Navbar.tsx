@@ -25,7 +25,7 @@ export function Navbar() {
               <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center group-hover:bg-accent transition-colors duration-300">
                 <Scissors className="text-white w-6 h-6" />
               </div>
-              <span className="text-xl font-headline font-bold text-foreground tracking-tight">StylePro <span className="text-accent">AI</span></span>
+              <span className="text-xl font-headline font-bold text-foreground tracking-tight">BarBerTok <span className="text-accent">AI</span></span>
             </Link>
           </div>
 

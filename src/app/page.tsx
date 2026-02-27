@@ -67,7 +67,7 @@ export default function Home() {
         <section id="services" className="py-20 bg-secondary/50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-headline font-bold mb-4">Почему StylePro AI?</h2>
+              <h2 className="text-3xl md:text-4xl font-headline font-bold mb-4">Почему BarBerTok AI?</h2>
               <p className="text-muted-foreground max-w-xl mx-auto">Мы сочетаем традиционное мастерство с передовыми технологиями для максимального результата.</p>
             </div>
 
@@ -159,7 +159,7 @@ export default function Home() {
                   <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                     <Scissors className="text-white w-5 h-5" />
                   </div>
-                  <span className="text-xl font-headline font-bold">StylePro AI</span>
+                  <span className="text-xl font-headline font-bold">BarBerTok AI</span>
                 </div>
                 <p className="text-muted-foreground max-w-sm leading-relaxed mb-6">
                   Переосмысление современного ухода. Сочетание ремесленного искусства барберинга с искусственным интеллектом, чтобы вы выглядели на все сто.
@@ -183,7 +183,7 @@ export default function Home() {
               </div>
             </div>
             <div className="border-t border-border pt-8 text-center text-muted-foreground text-xs">
-              <p>&copy; {new Date().getFullYear()} StylePro AI Barbershop. Все права защищены.</p>
+              <p>&copy; {new Date().getFullYear()} BarBerTok AI Barbershop. Все права защищены.</p>
             </div>
           </div>
         </footer>
