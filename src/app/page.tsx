@@ -8,6 +8,7 @@ import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 
 export default function Home() {
+  const heroBg = PlaceHolderImages.find(img => img.id === "hero-bg");
   const heroImg = PlaceHolderImages.find(img => img.id === "hero-barber");
   const cta1 = PlaceHolderImages.find(img => img.id === "cta-haircut-1");
   const cta2 = PlaceHolderImages.find(img => img.id === "cta-haircut-2");
@@ -21,6 +22,20 @@ export default function Home() {
       <main>
         {/* Hero Section */}
         <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+          {/* Background Image with Overlay */}
+          {heroBg && (
+            <div className="absolute inset-0 -z-20">
+              <Image
+                src={heroBg.imageUrl}
+                alt="Background"
+                fill
+                className="object-cover opacity-10"
+                priority
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-background via-transparent to-background"></div>
+            </div>
+          )}
+
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col lg:flex-row items-center gap-12">
               <div className="flex-1 text-center lg:text-left z-10">
@@ -43,7 +58,7 @@ export default function Home() {
                   </Link>
                   <Link href="/visualizer">
                     <Button size="lg" variant="outline" className="rounded-full px-8 text-lg font-medium border-accent text-accent hover:bg-accent hover:text-white transition-all w-full sm:w-auto">
-                      Попробовать ИИ-стилиста
+                      ИИ-стилист
                     </Button>
                   </Link>
                 </div>
@@ -75,7 +90,7 @@ export default function Home() {
         </section>
 
         {/* Features Grid */}
-        <section id="services" className="py-20 bg-secondary/50">
+        <section id="services" className="py-20 bg-secondary/30 relative">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-headline font-bold mb-4">Почему BarBerTok?</h2>
@@ -140,25 +155,25 @@ export default function Home() {
               <div className="flex-1 w-full max-w-sm lg:max-w-none relative z-10">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-4 pt-8">
-                    {cta1?.imageUrl && (
-                      <div className="rounded-2xl overflow-hidden aspect-square relative border-2 border-white/20">
+                    {cta1 && (
+                      <div className="rounded-2xl overflow-hidden aspect-square relative border-2 border-white/20 shadow-lg">
                         <Image src={cta1.imageUrl} fill alt={cta1.description} className="object-cover" data-ai-hint={cta1.imageHint} />
                       </div>
                     )}
-                    {cta2?.imageUrl && (
-                      <div className="rounded-2xl overflow-hidden aspect-square relative border-2 border-white/20">
+                    {cta2 && (
+                      <div className="rounded-2xl overflow-hidden aspect-square relative border-2 border-white/20 shadow-lg">
                         <Image src={cta2.imageUrl} fill alt={cta2.description} className="object-cover" data-ai-hint={cta2.imageHint} />
                       </div>
                     )}
                   </div>
                   <div className="space-y-4">
-                    {cta3?.imageUrl && (
-                      <div className="rounded-2xl overflow-hidden aspect-square relative border-2 border-white/20">
+                    {cta3 && (
+                      <div className="rounded-2xl overflow-hidden aspect-square relative border-2 border-white/20 shadow-lg">
                         <Image src={cta3.imageUrl} fill alt={cta3.description} className="object-cover" data-ai-hint={cta3.imageHint} />
                       </div>
                     )}
-                    {cta4?.imageUrl && (
-                      <div className="rounded-2xl overflow-hidden aspect-square relative border-2 border-white/20">
+                    {cta4 && (
+                      <div className="rounded-2xl overflow-hidden aspect-square relative border-2 border-white/20 shadow-lg">
                         <Image src={cta4.imageUrl} fill alt={cta4.description} className="object-cover" data-ai-hint={cta4.imageHint} />
                       </div>
                     )}
@@ -180,7 +195,7 @@ export default function Home() {
                   </div>
                   <span className="text-xl font-headline font-bold">BarBerTok</span>
                 </div>
-                <p className="text-muted-foreground max-sm leading-relaxed mb-6">
+                <p className="text-muted-foreground leading-relaxed mb-6">
                   Переосмысление современного ухода. Сочетание ремесленного искусства барберинга с искусственным интеллектом, чтобы вы выглядели на все сто.
                 </p>
               </div>
