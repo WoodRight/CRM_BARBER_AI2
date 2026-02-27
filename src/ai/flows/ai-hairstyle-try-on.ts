@@ -1,9 +1,8 @@
+
 'use server';
 /**
  * @fileOverview Этот процесс позволяет клиентам загружать свои фотографии
  *   и генерировать изображения себя с различными прическами с помощью ИИ.
- *
- * - aiHairstyleTryOn - Функция, обрабатывающая процесс ИИ-визуализации прически.
  */
 
 import { ai } from '@/ai/genkit';
@@ -45,46 +44,37 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
   async (input) => {
     let finalPhotoUri = input.photoDataUri;
 
-    // Если это URL, скачиваем его на сервере и оптимизируем размер
+    // Серверная загрузка для обхода CORS и оптимизации
     if (finalPhotoUri.startsWith('http')) {
       try {
-        const response = await fetch(finalPhotoUri, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch image: ${response.status}`);
-        }
+        const response = await fetch(finalPhotoUri);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         
         const arrayBuffer = await response.arrayBuffer();
         const contentType = response.headers.get('content-type') || 'image/jpeg';
         const base64 = Buffer.from(arrayBuffer).toString('base64');
         finalPhotoUri = `data:${contentType};base64,${base64}`;
       } catch (error: any) {
-        throw new Error(`Не удалось загрузить изображение: ${error.message}`);
+        throw new Error(`Не удалось загрузить фото по ссылке: ${error.message}`);
       }
     }
 
     try {
-      // Для модели gemini-2.5-flash-image важно, чтобы изображение было не слишком большим.
-      // API Gemini ожидает Part[] в prompt.
       const response = await ai.generate({
         model: 'googleai/gemini-2.5-flash-image',
         prompt: [
           { media: { url: finalPhotoUri } },
           {
-            text: `You are an expert barber. Edit this photo. Replace the current hairstyle with exactly: ${input.hairstyleDescription}. Keep the facial features, clothes, and background exactly the same. Output ONLY the resulting image.`
+            text: `Professional barber image editing task. Change the hairstyle to: ${input.hairstyleDescription}. Keep the face features and background the same. Result should be only the modified image.`
           },
         ],
         config: {
           responseModalities: ['TEXT', 'IMAGE'],
           safetySettings: [
-            { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
-            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
-            { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
-            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+            { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+            { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
           ],
         },
       });
@@ -92,24 +82,23 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
       const media = response.media;
 
       if (!media || !media.url) {
-        throw new Error('ИИ не смог изменить прическу. Попробуйте использовать более простое описание прически или другое фото.');
+        throw new Error('ИИ не вернул изображение. Попробуйте другое фото или более короткое описание стиля.');
       }
 
       return { generatedHairstyleImage: media.url };
     } catch (error: any) {
-      console.error('AI Flow Error Detail:', error);
+      console.error('AI Error:', error);
       
       const errMsg = error.message || '';
-      
       if (errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED')) {
         throw new Error('Лимит запросов исчерпан. Пожалуйста, подождите 60 секунд.');
       }
 
       if (errMsg.includes('400') || errMsg.includes('invalid_argument')) {
-        throw new Error('Ошибка параметров: попробуйте использовать фото меньшего размера (скриншот) или выберите другой стиль.');
+        throw new Error('Ошибка параметров: попробуйте использовать фото меньшего размера (например, скриншот) или выберите другой стиль из предложенных.');
       }
       
-      throw new Error(`Ошибка ИИ: ${errMsg}`);
+      throw new Error(`Ошибка при генерации: ${errMsg}`);
     }
   }
 );

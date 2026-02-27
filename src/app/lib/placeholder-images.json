@@ -4,37 +4,37 @@
     {
       "id": "hero-barber",
       "description": "Professional barber cutting hair",
-      "imageUrl": "https://picsum.photos/seed/barber1/1200/800",
+      "imageUrl": "https://images.unsplash.com/photo-1635273051839-003bf06a8751?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
       "imageHint": "barber shop"
     },
     {
       "id": "haircut-fade",
       "description": "Modern fade haircut",
-      "imageUrl": "https://picsum.photos/seed/fade/400/400",
+      "imageUrl": "https://images.unsplash.com/photo-1593702275687-f8b402bf1fb5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
       "imageHint": "men haircut"
     },
     {
       "id": "barber-profile-1",
       "description": "Master Barber Alex",
-      "imageUrl": "https://picsum.photos/seed/alex/200/200",
+      "imageUrl": "https://images.unsplash.com/photo-1560250097-0b93528c311a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
       "imageHint": "portrait man"
     },
     {
       "id": "barber-profile-2",
       "description": "Stylist Sarah",
-      "imageUrl": "https://picsum.photos/seed/sarah/200/200",
+      "imageUrl": "https://images.unsplash.com/photo-1614436201459-156d322d38c6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
       "imageHint": "portrait woman"
     },
     {
       "id": "barbershop-interior",
       "description": "Modern barbershop interior",
-      "imageUrl": "https://picsum.photos/seed/shop/800/600",
+      "imageUrl": "https://images.unsplash.com/photo-1572663459735-75425e957ab9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
       "imageHint": "modern barbershop"
     },
     {
       "id": "sample-man-portrait",
-      "description": "Portrait of a man for AI hairstyle testing",
-      "imageUrl": "https://picsum.photos/seed/man-sample/600/800",
+      "description": "Portrait of a man for AI hairstyle testing (Optimized 512x512)",
+      "imageUrl": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=512&h=512&auto=format&fit=crop",
       "imageHint": "man portrait"
     }
   ]
