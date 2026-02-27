@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   CheckCircle2, 
   Sparkles,
@@ -15,7 +16,9 @@ import {
   Upload,
   User,
   ImageIcon,
-  Clock
+  Clock,
+  ArrowRight,
+  ArrowLeft
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -25,25 +28,8 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { aiHairstyleTryOn } from "@/ai/flows/ai-hairstyle-try-on";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { useFirestore } from "@/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-
-const SERVICES = [
-  { id: 1, name: "Фирменная стрижка", price: 2500, duration: "45 мин" },
-  { id: 2, name: "Стрижка и моделирование бороды", price: 3500, duration: "75 мин" },
-  { id: 3, name: "Моделирование бороды", price: 1500, duration: "30 мин" },
-  { id: 4, name: "Королевское бритье", price: 2000, duration: "45 мин" },
-  { id: 5, name: "Камуфляж седины (волосы + борода)", price: 1800, duration: "40 мин" },
-  { id: 6, name: "Детская стрижка (5-12 лет)", price: 1800, duration: "40 мин" },
-  { id: 7, name: "Удаление волос воском (одна зона)", price: 500, duration: "15 мин" },
-  { id: 8, name: "Очищающая маска для лица", price: 800, duration: "20 мин" },
-  { id: 9, name: "Отец + Сын (Комбо)", price: 3800, duration: "90 мин" },
-];
-
-const BARBERS = [
-  { id: 1, name: "Алекс Риверс", role: "Топ-барбер", img: "https://picsum.photos/seed/alex/100/100" },
-  { id: 2, name: "Сара Чен", role: "Старший стилист", img: "https://picsum.photos/seed/sarah/100/100" },
-];
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, addDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
 
 const TIME_SLOTS = [
   "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
@@ -74,11 +60,26 @@ export default function BookingPage() {
   const { toast } = useToast();
   const db = useFirestore();
 
+  // Загрузка услуг и мастеров из БД
+  const servicesQuery = useMemoFirebase(() => {
+    if (!db) return null;
+    return query(collection(db, "services"), orderBy("price", "asc"));
+  }, [db]);
+
+  const barbersQuery = useMemoFirebase(() => {
+    if (!db) return null;
+    return query(collection(db, "barbers"), orderBy("name", "asc"));
+  }, [db]);
+
+  const { data: services, isLoading: servicesLoading } = useCollection(servicesQuery);
+  const { data: barbers, isLoading: barbersLoading } = useCollection(barbersQuery);
+
   const handleNextStep = () => {
     if (step === 1 && !selectedService) return toast({ variant: "destructive", title: "Выберите услугу" });
     if (step === 3 && !selectedBarber) return toast({ variant: "destructive", title: "Выберите мастера" });
     if (step === 4 && (!date || !selectedTime)) return toast({ variant: "destructive", title: "Выберите дату и время" });
     setStep(prev => prev + 1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -114,24 +115,31 @@ export default function BookingPage() {
           <div className="space-y-6">
             <h2 className="text-2xl font-headline font-bold">Выберите услугу</h2>
             <div className="grid gap-4">
-              {SERVICES.map((s) => (
-                <Card 
-                  key={s.id} 
-                  className={cn("cursor-pointer border-2 transition-all", selectedService?.id === s.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/50")}
-                  onClick={() => setSelectedService(s)}
-                >
-                  <CardContent className="p-6 flex justify-between items-center">
-                    <div>
-                      <h3 className="font-bold text-lg">{s.name}</h3>
-                      <div className="flex gap-4 items-center mt-1">
-                        <p className="text-primary font-bold">{s.price} ₽</p>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3" /> {s.duration}</p>
+              {servicesLoading ? (
+                Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)
+              ) : (
+                services?.map((s) => (
+                  <Card 
+                    key={s.id} 
+                    className={cn(
+                      "cursor-pointer border-2 transition-all duration-300", 
+                      selectedService?.id === s.id ? "border-primary bg-primary/5 shadow-md" : "border-border hover:border-primary/50"
+                    )}
+                    onClick={() => setSelectedService(s)}
+                  >
+                    <CardContent className="p-6 flex justify-between items-center">
+                      <div>
+                        <h3 className="font-bold text-lg">{s.name}</h3>
+                        <div className="flex gap-4 items-center mt-1">
+                          <p className="text-primary font-bold">{s.price} ₽</p>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3" /> {s.durationMinutes} мин</p>
+                        </div>
                       </div>
-                    </div>
-                    {selectedService?.id === s.id && <CheckCircle2 className="text-primary" />}
-                  </CardContent>
-                </Card>
-              ))}
+                      {selectedService?.id === s.id && <CheckCircle2 className="text-primary" />}
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </div>
           </div>
         );
@@ -140,16 +148,16 @@ export default function BookingPage() {
           <div className="space-y-6">
              <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-headline font-bold flex items-center gap-2"><Sparkles className="text-accent" /> ИИ-стилист</h2>
-                <Button variant="ghost" onClick={() => setStep(3)}>Пропустить</Button>
+                <Button variant="ghost" className="text-muted-foreground" onClick={() => setStep(3)}>Пропустить</Button>
              </div>
              <Card className="overflow-hidden border-border shadow-lg">
                <CardContent className="p-6 space-y-6">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                    <div className="space-y-4">
-                     <p className="text-sm font-medium text-muted-foreground">1. Загрузите портрет</p>
+                     <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">1. Ваше фото</p>
                      <div 
                        className={cn(
-                         "relative aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden",
+                         "relative aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden bg-muted/20",
                          photo ? "border-primary/40 bg-primary/5" : "border-muted-foreground/20 hover:border-primary/50"
                        )}
                        onClick={() => fileInputRef.current?.click()}
@@ -160,7 +168,7 @@ export default function BookingPage() {
                         ) : (
                           <div className="text-center p-4">
                             <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                            <span className="text-xs">Нажмите для загрузки</span>
+                            <span className="text-xs font-semibold">Нажмите для загрузки</span>
                           </div>
                         )}
                      </div>
@@ -175,15 +183,15 @@ export default function BookingPage() {
                    </div>
 
                    <div className="space-y-4">
-                     <p className="text-sm font-medium text-muted-foreground">2. Выберите прическу</p>
-                     <ScrollArea className="h-[200px] border rounded-md p-2">
+                     <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">2. Желаемая прическа</p>
+                     <ScrollArea className="h-[200px] border rounded-xl p-2 bg-muted/10">
                        <div className="grid grid-cols-2 gap-2">
                          {HAIRSTYLES.map(s => (
                            <Button 
                             key={s} 
                             size="sm" 
                             variant={aiStyle === s ? "default" : "outline"} 
-                            className="text-[10px] h-8"
+                            className="text-[10px] h-9 rounded-lg"
                             onClick={() => setAiStyle(s)}
                            >
                              {s}
@@ -194,20 +202,20 @@ export default function BookingPage() {
                      <Button 
                       onClick={handleAiVisualize} 
                       disabled={aiLoading || !photo} 
-                      className="w-full bg-accent hover:bg-accent/90"
+                      className="w-full h-12 bg-accent hover:bg-accent/90 text-white font-bold"
                      >
                        {aiLoading ? <RefreshCw className="animate-spin mr-2 h-4 w-4" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                       {aiLoading ? "Генерация..." : "Примерить стиль"}
+                       {aiLoading ? "Создаем образ..." : "Примерить стиль"}
                      </Button>
                    </div>
                  </div>
 
                  {aiGeneratedImage && (
-                   <div className="mt-6 pt-6 border-t border-border">
-                     <p className="text-center text-sm font-bold mb-4 flex items-center justify-center gap-2">
-                       <CheckCircle2 className="text-green-500 w-4 h-4" /> Ваш новый образ готов
+                   <div className="mt-8 pt-8 border-t border-border text-center">
+                     <p className="text-sm font-bold mb-4 flex items-center justify-center gap-2">
+                       <CheckCircle2 className="text-green-500 w-5 h-5" /> Ваш новый образ готов
                      </p>
-                     <div className="relative aspect-square max-w-[300px] mx-auto rounded-2xl overflow-hidden border-4 border-card shadow-2xl">
+                     <div className="relative aspect-square max-w-[320px] mx-auto rounded-2xl overflow-hidden border-4 border-card shadow-2xl">
                        <Image src={aiGeneratedImage} fill alt="Result" className="object-cover" />
                      </div>
                    </div>
@@ -221,15 +229,31 @@ export default function BookingPage() {
           <div className="space-y-6">
             <h2 className="text-2xl font-headline font-bold">Выберите мастера</h2>
             <div className="grid gap-4">
-              {BARBERS.map((b) => (
-                <Card key={b.id} className={cn("cursor-pointer border-2 transition-all", selectedBarber?.id === b.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/50")} onClick={() => setSelectedBarber(b)}>
-                  <CardContent className="p-4 flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full overflow-hidden relative"><Image src={b.img} fill alt={b.name} className="object-cover" /></div>
-                    <div className="flex-1 font-bold">{b.name}</div>
-                    {selectedBarber?.id === b.id && <CheckCircle2 className="text-primary" />}
-                  </CardContent>
-                </Card>
-              ))}
+              {barbersLoading ? (
+                Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)
+              ) : (
+                barbers?.map((b) => (
+                  <Card 
+                    key={b.id} 
+                    className={cn(
+                      "cursor-pointer border-2 transition-all duration-300", 
+                      selectedBarber?.id === b.id ? "border-primary bg-primary/5 shadow-md" : "border-border hover:border-primary/50"
+                    )} 
+                    onClick={() => setSelectedBarber(b)}
+                  >
+                    <CardContent className="p-4 flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-full overflow-hidden relative border-2 border-background">
+                        <Image src={b.profileImageUrl || `https://picsum.photos/seed/${b.id}/100/100`} fill alt={b.name} className="object-cover" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-lg">{b.name}</h3>
+                        <p className="text-xs text-muted-foreground">{b.role || "Мастер"}</p>
+                      </div>
+                      {selectedBarber?.id === b.id && <CheckCircle2 className="text-primary w-6 h-6" />}
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </div>
           </div>
         );
@@ -239,8 +263,8 @@ export default function BookingPage() {
             <h2 className="text-2xl font-headline font-bold">Дата и время</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                <div className="space-y-4">
-                 <p className="text-sm font-medium text-muted-foreground flex items-center gap-2"><ImageIcon className="w-4 h-4" /> Выберите дату</p>
-                 <div className="border rounded-2xl p-2 bg-card shadow-sm">
+                 <p className="text-sm font-medium text-muted-foreground flex items-center gap-2 uppercase tracking-widest"><ImageIcon className="w-4 h-4" /> 1. Дата</p>
+                 <div className="border rounded-2xl p-4 bg-card shadow-sm">
                     <Calendar 
                       mode="single" 
                       selected={date} 
@@ -251,15 +275,18 @@ export default function BookingPage() {
                  </div>
                </div>
                <div className="space-y-4">
-                 <p className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Clock className="w-4 h-4" /> Доступное время</p>
-                 <ScrollArea className="h-[300px] pr-4">
-                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                 <p className="text-sm font-medium text-muted-foreground flex items-center gap-2 uppercase tracking-widest"><Clock className="w-4 h-4" /> 2. Время</p>
+                 <ScrollArea className="h-[340px] pr-4 border rounded-2xl p-4 bg-muted/5">
+                   <div className="grid grid-cols-3 gap-2">
                      {TIME_SLOTS.map(t => (
                        <Button 
                         key={t} 
                         variant={selectedTime === t ? "default" : "outline"} 
                         onClick={() => setSelectedTime(t)} 
-                        className={cn("h-10 text-xs font-semibold rounded-lg", selectedTime === t && "ring-2 ring-primary ring-offset-2")}
+                        className={cn(
+                          "h-12 text-sm font-semibold rounded-xl transition-all", 
+                          selectedTime === t && "ring-2 ring-primary ring-offset-2"
+                        )}
                        >
                          {t}
                        </Button>
@@ -267,9 +294,11 @@ export default function BookingPage() {
                    </div>
                  </ScrollArea>
                  {selectedTime && (
-                   <p className="text-xs text-primary font-bold bg-primary/10 p-3 rounded-lg border border-primary/20">
-                     Выбрано: {date && format(date, 'd MMMM', { locale: ru })} в {selectedTime}
-                   </p>
+                   <div className="bg-primary/10 p-4 rounded-xl border border-primary/20 animate-in fade-in slide-in-from-top-2">
+                     <p className="text-sm text-primary font-bold text-center">
+                       {date && format(date, 'd MMMM', { locale: ru })} в {selectedTime}
+                     </p>
+                   </div>
                  )}
                </div>
             </div>
@@ -277,11 +306,15 @@ export default function BookingPage() {
         );
       case 5:
         return (
-          <div className="text-center py-10 bg-card rounded-2xl border border-border shadow-xl">
-            <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h2 className="text-3xl font-headline font-bold mb-2">Запись готова!</h2>
-            <p className="text-muted-foreground mb-6">Мы ждем вас {date && format(date, 'd MMMM', { locale: ru })} в {selectedTime}.</p>
-            <Link href="/"><Button className="rounded-full px-10 h-12 text-lg">На главную</Button></Link>
+          <div className="text-center py-16 px-6 bg-card rounded-[2rem] border border-border shadow-2xl animate-in zoom-in-95">
+            <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle2 className="w-12 h-12 text-green-500" />
+            </div>
+            <h2 className="text-4xl font-headline font-bold mb-4">Готово!</h2>
+            <p className="text-muted-foreground text-lg mb-8 max-w-sm mx-auto">
+              Мы ждем вас <span className="text-foreground font-bold">{date && format(date, 'd MMMM', { locale: ru })}</span> в <span className="text-foreground font-bold">{selectedTime}</span>.
+            </p>
+            <Link href="/"><Button className="rounded-full px-12 h-14 text-lg font-bold">Вернуться на главную</Button></Link>
           </div>
         );
       default: return null;
@@ -317,22 +350,43 @@ export default function BookingPage() {
       <Navbar />
       <main className="pt-24 pb-20 px-4 max-w-5xl mx-auto">
         {step < 5 && (
-          <div className="mb-10">
-            <Progress value={(step / 4) * 100} className="h-2 mb-4" />
-            <div className="flex justify-between text-[10px] sm:text-xs text-muted-foreground uppercase font-bold tracking-wider">
-              <span>Услуга</span><span>ИИ</span><span>Мастер</span><span>Время</span>
+          <div className="mb-12">
+            <div className="flex justify-between items-end mb-4">
+               <p className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em]">Шаг {step} из 4</p>
+               <p className="text-sm font-bold text-primary">{Math.round((step / 4) * 100)}%</p>
             </div>
+            <Progress value={(step / 4) * 100} className="h-1.5" />
           </div>
         )}
-        {renderStep()}
+        
+        <div className="min-h-[500px]">
+          {renderStep()}
+        </div>
+
         {step < 5 && (
-          <div className="mt-10 flex justify-between items-center border-t border-border pt-6">
-            <Button variant="outline" className="rounded-full px-6" onClick={() => setStep(s => s - 1)} disabled={step === 1}>Назад</Button>
+          <div className="mt-12 flex justify-between items-center border-t border-border pt-8">
+            <Button 
+              variant="ghost" 
+              className="rounded-full px-8 h-12 font-bold" 
+              onClick={() => setStep(s => s - 1)} 
+              disabled={step === 1}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" /> Назад
+            </Button>
             {step < 4 ? (
-              <Button className="rounded-full px-8 bg-primary hover:bg-primary/90" onClick={handleNextStep}>Далее</Button>
+              <Button 
+                className="rounded-full px-10 h-12 bg-primary hover:bg-primary/90 font-bold" 
+                onClick={handleNextStep}
+              >
+                Далее <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
             ) : (
-              <Button className="rounded-full px-10 bg-green-600 hover:bg-green-700 text-white" onClick={handleConfirm} disabled={isSubmitting || !selectedTime}>
-                {isSubmitting ? <RefreshCw className="animate-spin mr-2" /> : null}
+              <Button 
+                className="rounded-full px-12 h-14 bg-green-600 hover:bg-green-700 text-white font-bold text-lg shadow-lg shadow-green-500/20" 
+                onClick={handleConfirm} 
+                disabled={isSubmitting || !selectedTime}
+              >
+                {isSubmitting ? <Loader2 className="animate-spin mr-2 w-5 h-5" /> : null}
                 {isSubmitting ? "Бронируем..." : "Подтвердить запись"}
               </Button>
             )}

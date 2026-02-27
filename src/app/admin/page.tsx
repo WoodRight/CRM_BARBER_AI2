@@ -1,10 +1,9 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
 import { useRouter } from "next/navigation";
-import { collection, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc, setDoc } from "firebase/firestore";
+import { collection, query, orderBy, limit, addDoc, serverTimestamp, deleteDoc, doc, setDoc } from "firebase/firestore";
 import { Navbar } from "@/components/layout/Navbar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -20,7 +19,6 @@ import {
   Scissors, 
   Settings, 
   Clock,
-  DollarSign,
   LogOut,
   Plus,
   Trash2,
@@ -55,10 +53,10 @@ export default function AdminDashboard() {
   const [ctaImg3, setCtaImg3] = useState("");
   const [ctaImg4, setCtaImg4] = useState("");
 
-  // Запросы к Firestore
+  // Мемоизированные запросы для оптимизации
   const bookingsQuery = useMemoFirebase(() => {
     if (!db) return null;
-    return query(collection(db, "bookings"), orderBy("createdAt", "desc"));
+    return query(collection(db, "bookings"), orderBy("createdAt", "desc"), limit(50));
   }, [db]);
 
   const servicesQuery = useMemoFirebase(() => {
@@ -209,15 +207,13 @@ export default function AdminDashboard() {
     }
   };
 
-  if (isUserLoading || !user) {
+  if (isUserLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
-
-  const totalRevenue = bookings?.reduce((acc, curr: any) => acc + (curr.totalPrice || 0), 0) || 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -227,7 +223,7 @@ export default function AdminDashboard() {
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
           <div>
             <h1 className="text-3xl font-headline font-bold">Панель <span className="text-accent">Администратора</span></h1>
-            <p className="text-muted-foreground">{user.email}</p>
+            <p className="text-muted-foreground">{user?.email}</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={seedDemoData} disabled={isSeeding}>
@@ -251,10 +247,17 @@ export default function AdminDashboard() {
           <TabsContent value="bookings">
              <Card>
               <CardHeader>
-                <CardTitle>Активные записи</CardTitle>
+                <CardTitle>Последние записи</CardTitle>
+                <CardDescription>Отображаются последние 50 бронирований.</CardDescription>
               </CardHeader>
               <CardContent>
-                {bookingsLoading ? <Skeleton className="h-40 w-full" /> : (
+                {bookingsLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                  </div>
+                ) : (
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -279,6 +282,11 @@ export default function AdminDashboard() {
                           </TableCell>
                         </TableRow>
                       ))}
+                      {bookings?.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">Нет активных записей</TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 )}
@@ -291,28 +299,45 @@ export default function AdminDashboard() {
               <Card>
                 <CardHeader><CardTitle>Добавить услугу</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
-                  <Input placeholder="Название" value={newServiceName} onChange={e => setNewServiceName(e.target.value)} />
-                  <Input type="number" placeholder="Цена" value={newServicePrice} onChange={e => setNewServicePrice(e.target.value)} />
+                  <div className="space-y-2">
+                    <Label>Название</Label>
+                    <Input placeholder="Напр: Стрижка кроп" value={newServiceName} onChange={e => setNewServiceName(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Цена (₽)</Label>
+                    <Input type="number" placeholder="Напр: 1500" value={newServicePrice} onChange={e => setNewServicePrice(e.target.value)} />
+                  </div>
                   <Button className="w-full" onClick={handleAddService}><Plus className="w-4 h-4 mr-2" /> Добавить</Button>
                 </CardContent>
               </Card>
               <Card className="lg:col-span-2">
                 <CardContent className="pt-6">
-                   <Table>
-                     <TableBody>
-                        {services?.map((s: any) => (
-                          <TableRow key={s.id}>
-                            <TableCell>{s.name}</TableCell>
-                            <TableCell>{s.price} ₽</TableCell>
-                            <TableCell className="text-right">
-                              <Button variant="ghost" size="icon" onClick={() => handleDelete("services", s.id)}>
-                                <Trash2 className="w-4 h-4 text-destructive" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                     </TableBody>
-                   </Table>
+                  {servicesLoading ? (
+                    <div className="space-y-2"><Skeleton className="h-20 w-full" /><Skeleton className="h-20 w-full" /></div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Название</TableHead>
+                          <TableHead>Цена</TableHead>
+                          <TableHead className="text-right">Действие</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                          {services?.map((s: any) => (
+                            <TableRow key={s.id}>
+                              <TableCell className="font-medium">{s.name}</TableCell>
+                              <TableCell>{s.price} ₽</TableCell>
+                              <TableCell className="text-right">
+                                <Button variant="ghost" size="icon" onClick={() => handleDelete("services", s.id)}>
+                                  <Trash2 className="w-4 h-4 text-destructive" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                      </TableBody>
+                    </Table>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -323,15 +348,23 @@ export default function AdminDashboard() {
                <Card>
                 <CardHeader><CardTitle>Новый мастер</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
-                  <Input placeholder="Имя Фамилия" value={newBarberName} onChange={e => setNewBarberName(e.target.value)} />
+                  <div className="space-y-2">
+                    <Label>Имя и Фамилия</Label>
+                    <Input placeholder="Александр Петров" value={newBarberName} onChange={e => setNewBarberName(e.target.value)} />
+                  </div>
                   <Button className="w-full" onClick={handleAddBarber}><Plus className="w-4 h-4 mr-2" /> Добавить</Button>
                 </CardContent>
               </Card>
               <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                {barbers?.map((barber: any) => (
-                  <Card key={barber.id}>
+                {barbersLoading ? (
+                  <Skeleton className="h-40 w-full" />
+                ) : barbers?.map((barber: any) => (
+                  <Card key={barber.id} className="hover:bg-accent/5 transition-colors">
                     <CardContent className="p-6 flex items-center justify-between">
-                      <h3 className="font-bold">{barber.name}</h3>
+                      <div>
+                        <h3 className="font-bold">{barber.name}</h3>
+                        <p className="text-xs text-muted-foreground">{barber.role}</p>
+                      </div>
                       <Button variant="ghost" size="icon" onClick={() => handleDelete("barbers", barber.id)}>
                         <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>
@@ -378,7 +411,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                <Button className="w-full bg-green-600 hover:bg-green-700" onClick={handleSaveContent} disabled={isSavingContent}>
+                <Button className="w-full bg-green-600 hover:bg-green-700 h-12 text-white" onClick={handleSaveContent} disabled={isSavingContent}>
                   {isSavingContent ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                   {isSavingContent ? "Сохранение..." : "Сохранить изменения"}
                 </Button>
