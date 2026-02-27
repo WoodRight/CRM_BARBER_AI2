@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview Этот процесс позволяет клиентам загружать свои фотографии или ссылки на фото
+ * @fileOverview Этот процесс позволяет клиентам загружать свои фотографии
  *   и генерировать изображения себя с различными прическами с помощью ИИ.
  *
  * - aiHairstyleTryOn - Функция, обрабатывающая процесс ИИ-визуализации прически.
@@ -13,12 +13,12 @@ const AiHairstyleTryOnInputSchema = z.object({
   photoDataUri: z
     .string()
     .describe(
-      "Фотография клиента в виде data URI или URL-ссылки. Если это data URI, он должен включать MIME-тип и Base64."
+      "Фотография клиента в виде data URI или URL-ссылки."
     ),
   hairstyleDescription: z
     .string()
     .describe(
-      'Описание желаемой прически, например, "короткий бокс", "длинные кудрявые волосы".'
+      'Описание желаемой прически.'
     ),
 });
 export type AiHairstyleTryOnInput = z.infer<typeof AiHairstyleTryOnInputSchema>;
@@ -63,25 +63,18 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
         const base64 = Buffer.from(arrayBuffer).toString('base64');
         finalPhotoUri = `data:${contentType};base64,${base64}`;
       } catch (error: any) {
-        throw new Error(`Не удалось загрузить изображение-пример: ${error.message}`);
+        throw new Error(`Не удалось загрузить изображение: ${error.message}`);
       }
     }
 
     try {
-      // Используем gemini-2.5-flash-image для редактирования
+      // Модель gemini-2.5-flash-image требует четкого разделения контента
       const response = await ai.generate({
         model: 'googleai/gemini-2.5-flash-image',
         prompt: [
           { media: { url: finalPhotoUri } },
           {
-            text:
-              `You are a professional celebrity hair stylist. Your task is to change the hairstyle of the person in the provided photo. ` +
-              `Target hairstyle: ${input.hairstyleDescription}. ` +
-              `CRITICAL INSTRUCTIONS: ` +
-              `1. Maintain the identity of the person (keep the exact same face). ` +
-              `2. Keep the background, lighting, and clothing identical. ` +
-              `3. Only modify the hair on the head to match the description perfectly. ` +
-              `4. Output the resulting image as the primary response.`,
+            text: `You are a professional hair stylist. Change the hairstyle of the person in this photo to: ${input.hairstyleDescription}. Keep the face, background and clothes identical. Only change the hair. Return only the edited image.`
           },
         ],
         config: {
@@ -98,25 +91,22 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
       const media = response.media;
 
       if (!media || !media.url) {
-        throw new Error('ИИ не смог сгенерировать изображение. Возможно, фото не подходит или нарушены правила безопасности.');
+        throw new Error('ИИ не вернул изображение. Попробуйте использовать более простое описание прически или другое фото.');
       }
 
       return { generatedHairstyleImage: media.url };
     } catch (error: any) {
-      console.error('Genkit error details:', error);
+      console.error('AI Flow Error:', error);
       
       const errMsg = error.message || '';
       
+      // Обработка типичных ошибок API
       if (errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED')) {
-        throw new Error(
-          'Лимит запросов исчерпан. Пожалуйста, подождите 60 секунд и попробуйте снова.'
-        );
+        throw new Error('Лимит запросов исчерпан. Подождите 60 секунд.');
       }
 
-      if (errMsg.includes('invalid_argument') || errMsg.includes('400')) {
-        throw new Error(
-          'Ошибка параметров (invalid_argument). Попробуйте использовать другое фото или более короткое описание стиля.'
-        );
+      if (errMsg.includes('400') || errMsg.includes('invalid_argument')) {
+        throw new Error('Ошибка: Ваше фото слишком большое или формат не поддерживается. Попробуйте уменьшить размер фото (до 2МБ) или использовать пример.');
       }
       
       throw new Error(`Ошибка ИИ: ${errMsg}`);
