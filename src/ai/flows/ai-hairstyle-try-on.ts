@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview Этот процесс использует API AILabTools (Hairstyle Editor Pro)
@@ -21,8 +20,12 @@ const AiHairstyleTryOnOutputSchema = z.object({
 });
 export type AiHairstyleTryOnOutput = z.infer<typeof AiHairstyleTryOnOutputSchema>;
 
-// Карта соответствия стилей StylePro AI индексам AILabTools
+/**
+ * Карта соответствия названий стилей индексам AILabTools (hair_style)
+ * 1: Pompadour, 3: Short/Fade, 7: Man Bun, 8: Side Part, 10: Quiff и т.д.
+ */
 const STYLE_MAP: Record<string, number> = {
+  // English keys
   "Classic Fade": 3,
   "Pompadour": 1,
   "Textured Quiff": 10,
@@ -31,11 +34,16 @@ const STYLE_MAP: Record<string, number> = {
   "Buzz Cut": 3,
   "Long Curls": 4,
   "Taper Fade": 9,
-  "Бокс": 3,
-  "Классический Помпадур": 1,
+  // Russian keys
   "Фейд": 3,
+  "Классический Помпадур": 1,
   "Текстурированный Квифф": 10,
-  "Пробор на бок": 8
+  "Пробор на бок": 8,
+  "Мужской пучок": 7,
+  "Бокс": 3,
+  "Длинные кудри": 4,
+  "Тейпер": 9,
+  "Квифф": 10
 };
 
 export async function aiHairstyleTryOn(
@@ -59,7 +67,7 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
     }
 
     if (!appId) {
-      throw new Error('App ID для AILabTools не найден. Посмотрите его в панели управления (иконка глаза или карандаша).');
+      throw new Error('App ID для AILabTools не найден. Проверьте поле AILAB_APP_ID в .env');
     }
 
     // Очищаем base64 от префикса (API требует чистый base64 без "data:image/png;base64,")

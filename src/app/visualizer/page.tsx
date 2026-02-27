@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -17,14 +16,14 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const HAIRSTYLES = [
-  "Classic Fade",
-  "Pompadour",
-  "Textured Quiff",
-  "Side Part",
-  "Man Bun",
-  "Buzz Cut",
-  "Long Curls",
-  "Taper Fade"
+  "Фейд",
+  "Классический Помпадур",
+  "Текстурированный Квифф",
+  "Пробор на бок",
+  "Мужской пучок",
+  "Бокс",
+  "Длинные кудри",
+  "Тейпер"
 ];
 
 export default function VisualizerPage() {
@@ -118,7 +117,7 @@ export default function VisualizerPage() {
         <div className="mb-10 text-center">
           <h1 className="text-4xl font-headline font-bold mb-4">ИИ-визуализатор <span className="text-accent">причесок</span></h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Использует модель Gemini 2.5 Flash Image. Если у вас возникла ошибка параметров, убедитесь, что ваш API-ключ имеет доступ к этой модели в Google AI Studio.
+            Использует специализированный алгоритм AILabTools для реалистичной примерки волос на ваше фото.
           </p>
         </div>
 
@@ -129,7 +128,7 @@ export default function VisualizerPage() {
             <AlertDescription>
               {errorDetails}
               <div className="mt-2 text-xs opacity-80">
-                Совет: Используйте "Sample Photo" для проверки работоспособности ключа. Если даже пример не работает, значит ваш API-ключ не поддерживает модель 2.5 Flash Image.
+                Совет: Убедитесь, что на фото хорошо видно лицо. Если ошибка повторяется, попробуйте другое фото или уменьшите размер текущего.
               </div>
             </AlertDescription>
           </Alert>
@@ -194,7 +193,7 @@ export default function VisualizerPage() {
                   ))}
                 </div>
                 <Input 
-                  placeholder="Или опишите на английском..." 
+                  placeholder="Или опишите свой стиль..." 
                   value={customStyle}
                   onChange={(e) => { setCustomStyle(e.target.value); setSelectedStyle(""); }}
                 />
