@@ -83,7 +83,7 @@ export default function Home() {
                       fill 
                       className="object-cover"
                       priority
-                      data-ai-hint="barber shaving"
+                      data-ai-hint="professional barber"
                     />
                   </div>
                 </div>
