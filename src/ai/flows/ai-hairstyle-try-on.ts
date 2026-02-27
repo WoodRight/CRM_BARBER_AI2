@@ -58,6 +58,10 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
       throw new Error('Ключ API AILabTools (AILAB_APP_KEY) не найден в .env');
     }
 
+    if (!appId) {
+      throw new Error('App ID для AILabTools не найден. Посмотрите его в панели управления (иконка глаза или карандаша).');
+    }
+
     // Очищаем base64 от префикса (API требует чистый base64 без "data:image/png;base64,")
     const base64Image = input.photoDataUri.includes(',') 
       ? input.photoDataUri.split(',')[1] 
@@ -66,9 +70,9 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
     // Определяем индекс прически (по умолчанию 3 - короткая мужская)
     const styleIndex = STYLE_MAP[input.hairstyleDescription] || 3;
 
-    // AILabTools часто требует данные в формате x-www-form-urlencoded
+    // Параметры запроса согласно документации AILabTools
     const formData = new URLSearchParams();
-    formData.append('app_id', appId || ""); 
+    formData.append('app_id', appId); 
     formData.append('app_key', appKey);
     formData.append('image', base64Image);
     formData.append('task_type', 'hairstyle');
@@ -84,19 +88,22 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+        throw new Error(`Ошибка сети: ${response.status} ${response.statusText}`);
       }
 
       const result = await response.json();
 
       // Обработка ошибок самого API AILabTools
       if (result.error_code !== 0) {
-        // Код 10001 часто означает неверный app_id или app_key
-        throw new Error(`AILabTools API Error: ${result.error_msg} (Код: ${result.error_code})`);
+        let errorMsg = result.error_msg;
+        if (result.error_code === 10001) errorMsg = "Неверный App ID или App Key. Проверьте данные в .env";
+        if (result.error_code === 10003) errorMsg = "Недостаточно средств на балансе AILabTools.";
+        
+        throw new Error(`AILabTools Error: ${errorMsg} (Код: ${result.error_code})`);
       }
 
       if (!result.data || !result.data.image) {
-        throw new Error('API успешно отработало, но не вернуло изображение.');
+        throw new Error('API успешно отработало, но не вернуло изображение. Возможно, лицо на фото не распознано.');
       }
 
       return { 
@@ -104,7 +111,7 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
       };
     } catch (error: any) {
       console.error('AILabTools Flow Error:', error);
-      throw new Error(error.message || 'Ошибка при обращении к сервису обработки изображений');
+      throw new Error(error.message || 'Произошла ошибка при обработке фото через AILabTools');
     }
   }
 );
