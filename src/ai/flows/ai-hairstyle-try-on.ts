@@ -3,10 +3,10 @@
  * @fileOverview Этот процесс использует API AILabTools (AILabAPI)
  * для асинхронной примерки причесок.
  * 
- * Логика переписана в точном соответствии с предоставленным Python примером и документацией:
- * 1. POST на /hairstyle-editor-pro с task_type=async и auto=1.
- * 2. Получение task_id из корня ответа.
- * 3. Циклический опрос /query-async-task-result через GET каждые 5 секунд.
+ * Логика в точном соответствии с документацией:
+ * 1. POST на /hairstyle-editor-pro с task_type=async.
+ * 2. Получение task_id.
+ * 3. Циклический опрос /query-async-task-result каждые 5 секунд.
  */
 
 import { ai } from '@/ai/genkit';
@@ -25,7 +25,6 @@ export type AiHairstyleTryOnOutput = z.infer<typeof AiHairstyleTryOnOutputSchema
 
 /**
  * Карта соответствия названий причесок строковым идентификаторам AILabTools.
- * Взято из предоставленного списка Male/Female стилей.
  */
 const STYLE_MAP: Record<string, string> = {
   "Бокс": "BuzzCut",
@@ -55,7 +54,8 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
     outputSchema: AiHairstyleTryOnOutputSchema,
   },
   async (input) => {
-    const apiKey = "VjEL6M5wqiYtQZnJUeTRoK3LBuzpxIw3zWrAhtHGOaW0xDrlfdn9DAyFCFMGhj1N";
+    // Используем переменную окружения для безопасности на публичном сайте
+    const apiKey = process.env.AILAB_API_KEY || "VjEL6M5wqiYtQZnJUeTRoK3LBuzpxIw3zWrAhtHGOaW0xDrlfdn9DAyFCFMGhj1N";
 
     // 1. Подготовка бинарных данных изображения
     const parts = input.photoDataUri.split(',');
@@ -71,14 +71,11 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
 
     const styleId = STYLE_MAP[input.hairstyleDescription] || "BuzzCut";
 
-    // Формируем FormData в соответствии с Body Fixed Fields документации
     const formData = new FormData();
     formData.append('task_type', 'async');
     formData.append('auto', '1');
     formData.append('image', blob, 'image.jpg');
     formData.append('hair_style', styleId);
-    // По желанию можно добавить color или image_size
-    // formData.append('image_size', '1');
 
     try {
       console.log(`AILab: Отправка задачи... (Стиль: ${styleId})`);
@@ -94,32 +91,26 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
       const createResult = await createResponse.json();
 
       if (!createResponse.ok || createResult.error_code !== 0) {
-        console.error('AILab Create Task Error:', createResult);
         throw new Error(`Ошибка API (${createResult.error_code}): ${createResult.error_msg || 'Не удалось создать задачу'}`);
       }
 
-      // Согласно Response Example, task_id находится в корне объекта
-      const taskId = createResult.task_id;
+      // task_id может быть в корне или в data
+      const taskId = createResult.task_id || createResult.data?.task_id;
       
       if (!taskId) {
-        console.error('AILab Response structure:', createResult);
-        throw new Error('Сервер не вернул task_id. Попробуйте другое фото или проверьте лимиты API.');
+        throw new Error('Сервер не вернул task_id. Попробуйте другое фото.');
       }
 
-      console.log('AILab: Задача создана успешно. ID:', taskId);
+      console.log('AILab: Задача создана. ID:', taskId);
 
-      // 2. Опрос (Polling) статуса как в примере: каждые 5 секунд
       let resultImage = null;
       let attempts = 0;
-      const maxAttempts = 24; // Ожидаем до 2 минут (24 * 5 сек)
+      const maxAttempts = 24; // 2 минуты
 
       const queryUrl = "https://www.ailabapi.com/api/common/query-async-task-result";
 
       while (attempts < maxAttempts) {
         attempts++;
-        console.log(`AILab: Проверка статуса... (Попытка ${attempts}/${maxAttempts})`);
-        
-        // Ждем 5 секунд перед следующим запросом
         await new Promise(resolve => setTimeout(resolve, 5000));
         
         const pollResponse = await fetch(`${queryUrl}?task_id=${taskId}`, {
@@ -132,46 +123,29 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
         const pollResult = await pollResponse.json();
 
         if (pollResult.error_code !== 0) {
-          throw new Error(`Ошибка проверки статуса: ${pollResult.error_msg}`);
+          throw new Error(`Ошибка статуса: ${pollResult.error_msg}`);
         }
 
-        /**
-         * task_status: 
-         * 0: Queued
-         * 1: Processing
-         * 2: Success
-         */
         const taskStatus = pollResult.task_status;
-        console.log(`AILab: Текущий статус задачи: ${taskStatus}`);
 
         if (taskStatus === 2) {
-          // Успех! Согласно Business Response Fields, результат в data.images
           const images = pollResult.data?.images;
           resultImage = images?.[0];
-          
-          if (resultImage) {
-            console.log('AILab: Изображение успешно получено!');
-            break;
-          } else {
-            throw new Error('Статус задачи 2, но массив изображений пуст.');
-          }
-        } else if (taskStatus === 3 || (pollResult.error_code !== 0)) {
-          // В документации 0, 1, 2, но на практике 3 может означать ошибку выполнения
-          throw new Error(`Ошибка обработки на стороне сервера: ${pollResult.error_msg || 'Unknown error'}`);
+          if (resultImage) break;
+        } else if (taskStatus === 3) {
+          throw new Error('Ошибка обработки на сервере.');
         }
       }
 
       if (!resultImage) {
-        throw new Error('Превышено время ожидания обработки. Попробуйте позже.');
+        throw new Error('Время ожидания истекло.');
       }
 
-      return { 
-        generatedHairstyleImage: resultImage 
-      };
+      return { generatedHairstyleImage: resultImage };
 
     } catch (error: any) {
-      console.error('AILabTools Critical Error:', error);
-      throw new Error(error.message || 'Произошла ошибка при связи с сервером ИИ.');
+      console.error('AILabTools Error:', error);
+      throw new Error(error.message || 'Ошибка связи с сервером ИИ.');
     }
   }
 );

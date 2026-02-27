@@ -3,8 +3,14 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'StylePro AI | Современный барбершоп и ИИ-стилист',
-  description: 'Запишитесь на стрижку и примерьте новые образы с помощью искусственного интеллекта.',
+  title: 'StylePro AI | Премиальный барбершоп и ИИ-стилист',
+  description: 'Примерьте новый образ с помощью ИИ и запишитесь к лучшим барберам города. Будущее мужского стиля уже здесь.',
+  openGraph: {
+    title: 'StylePro AI | Ваш идеальный стиль',
+    description: 'ИИ-визуализация причесок и онлайн-запись в современный барбершоп.',
+    images: ['https://images.unsplash.com/photo-1635273051839-003bf06a8751?q=80&w=1200'],
+  },
+  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
 };
 
 export default function RootLayout({
