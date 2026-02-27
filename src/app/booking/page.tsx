@@ -6,11 +6,28 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
-import { Scissors, Clock, User, CheckCircle2, ChevronRight, ChevronLeft, CalendarIcon } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import { 
+  Scissors, 
+  Clock, 
+  User, 
+  CheckCircle2, 
+  ChevronRight, 
+  ChevronLeft, 
+  CalendarIcon,
+  Sparkles,
+  Upload,
+  RefreshCw,
+  Camera
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { aiHairstyleTryOn } from "@/ai/flows/ai-hairstyle-try-on";
 
 const SERVICES = [
   { id: 1, name: "Signature Haircut", price: "$45", duration: "45 min", description: "Precision cut, wash, and style." },
@@ -25,6 +42,10 @@ const BARBERS = [
   { id: 3, name: "Marcus Thorne", role: "Grooming Expert", img: "https://picsum.photos/seed/marcus/100/100" },
 ];
 
+const PRESET_STYLES = [
+  "Buzz Cut", "Classic Pompadour", "Taper Fade", "Textured Quiff", "Sleek Side Part"
+];
+
 const TIME_SLOTS = ["09:00 AM", "10:00 AM", "11:00 AM", "01:00 PM", "02:00 PM", "03:00 PM", "04:30 PM", "05:30 PM"];
 
 export default function BookingPage() {
@@ -34,6 +55,14 @@ export default function BookingPage() {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // AI Visualizer State
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [aiGeneratedImage, setAiGeneratedImage] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiProgress, setAiProgress] = useState(0);
+  const [aiStyle, setAiStyle] = useState("");
+
   const { toast } = useToast();
 
   const handleNextStep = () => {
@@ -41,11 +70,54 @@ export default function BookingPage() {
        toast({ variant: "destructive", title: "Missing Selection", description: "Please select a service." });
        return;
     }
-    if (step === 2 && !selectedBarber) {
+    // Step 2 (AI) is optional, so we allow next
+    if (step === 3 && !selectedBarber) {
        toast({ variant: "destructive", title: "Missing Selection", description: "Please choose a barber." });
        return;
     }
     setStep(prev => prev + 1);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhoto(reader.result as string);
+        setAiGeneratedImage(null);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAiVisualize = async () => {
+    if (!photo) {
+      toast({ variant: "destructive", title: "Upload Photo", description: "Please upload a photo first." });
+      return;
+    }
+    if (!aiStyle) {
+      toast({ variant: "destructive", title: "Pick a Style", description: "Please choose or describe a style." });
+      return;
+    }
+
+    setAiLoading(true);
+    setAiProgress(10);
+    const interval = setInterval(() => setAiProgress(p => p < 90 ? p + 10 : p), 1200);
+
+    try {
+      const result = await aiHairstyleTryOn({
+        photoDataUri: photo,
+        hairstyleDescription: aiStyle,
+      });
+      setAiGeneratedImage(result.generatedHairstyleImage);
+      setAiProgress(100);
+      toast({ title: "Visualizer Ready", description: "AI has rendered your new style!" });
+    } catch (err) {
+      toast({ variant: "destructive", title: "AI Error", description: "Could not generate style. Please try again." });
+    } finally {
+      setAiLoading(false);
+      clearInterval(interval);
+    }
   };
 
   const handleConfirm = async () => {
@@ -54,10 +126,9 @@ export default function BookingPage() {
       return;
     }
     setIsSubmitting(true);
-    // Simulate API call
     await new Promise(r => setTimeout(r, 2000));
     setIsSubmitting(false);
-    setStep(4);
+    setStep(5);
     toast({ title: "Appointment Booked!", description: "We've sent a confirmation to your email." });
   };
 
@@ -92,6 +163,80 @@ export default function BookingPage() {
         );
       case 2:
         return (
+          <div className="space-y-8">
+            <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+              <div>
+                <h2 className="text-2xl font-headline font-bold mb-2 flex items-center gap-2">
+                  <Sparkles className="w-6 h-6 text-accent" /> AI Stylist (Optional)
+                </h2>
+                <p className="text-muted-foreground">Visualize your new look before we start cutting.</p>
+              </div>
+              <Button variant="ghost" className="text-muted-foreground" onClick={() => setStep(3)}>Skip this step <ChevronRight className="w-4 h-4 ml-1" /></Button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <Card>
+                  <CardContent className="pt-6 space-y-4">
+                    <Label>1. Upload your photo</Label>
+                    <div 
+                      className="border-2 border-dashed rounded-xl p-4 text-center cursor-pointer hover:bg-muted/50 transition-colors h-48 flex flex-col items-center justify-center relative overflow-hidden"
+                      onClick={() => document.getElementById('photo-input')?.click()}
+                    >
+                      <input id="photo-input" type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
+                      {photo ? (
+                        <Image src={photo} alt="Source" fill className="object-cover opacity-50" />
+                      ) : (
+                        <div className="flex flex-col items-center">
+                          <Upload className="w-8 h-8 mb-2 text-muted-foreground" />
+                          <p className="text-sm">Click to upload portrait</p>
+                        </div>
+                      )}
+                      {photo && <div className="absolute inset-0 flex items-center justify-center bg-black/20 text-white font-bold">Change Photo</div>}
+                    </div>
+
+                    <Label>2. Pick or describe a style</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {PRESET_STYLES.map(s => (
+                        <Button key={s} variant={aiStyle === s ? "default" : "outline"} size="sm" onClick={() => setAiStyle(s)} className="text-xs">
+                          {s}
+                        </Button>
+                      ))}
+                    </div>
+                    <Input placeholder="Or describe manually..." value={aiStyle} onChange={(e) => setAiStyle(e.target.value)} />
+                    
+                    <Button 
+                      className="w-full bg-accent hover:bg-accent/90 text-white font-bold h-12" 
+                      onClick={handleAiVisualize}
+                      disabled={aiLoading}
+                    >
+                      {aiLoading ? <RefreshCw className="w-5 h-5 animate-spin mr-2" /> : <Sparkles className="w-5 h-5 mr-2" />}
+                      Generate Preview
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="flex items-center justify-center bg-muted/30 rounded-2xl min-h-[300px] border relative overflow-hidden">
+                {aiLoading ? (
+                  <div className="text-center p-8 w-full">
+                    <Progress value={aiProgress} className="mb-4" />
+                    <p className="text-sm font-medium animate-pulse">AI is crafting your look...</p>
+                  </div>
+                ) : aiGeneratedImage ? (
+                  <Image src={aiGeneratedImage} alt="AI Result" fill className="object-cover" />
+                ) : (
+                  <div className="text-center p-8 text-muted-foreground">
+                    <Camera className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                    <p>Your AI preview will appear here</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      case 3:
+        return (
           <div className="space-y-6">
             <h2 className="text-2xl font-headline font-bold mb-4">Choose Your Barber</h2>
             <div className="grid grid-cols-1 gap-4">
@@ -116,7 +261,7 @@ export default function BookingPage() {
             </div>
           </div>
         );
-      case 3:
+      case 4:
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-headline font-bold mb-4">Select Date & Time</h2>
@@ -154,22 +299,34 @@ export default function BookingPage() {
             </div>
           </div>
         );
-      case 4:
+      case 5:
         return (
           <div className="text-center py-12 animate-in fade-in zoom-in duration-500">
              <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-green-500/20">
                 <CheckCircle2 className="text-white w-10 h-10" />
              </div>
              <h2 className="text-3xl font-headline font-bold mb-2">Booking Confirmed!</h2>
-             <p className="text-muted-foreground mb-8">Your appointment is scheduled. We'll send you a reminder text 2 hours before your cut.</p>
-             <Card className="max-w-md mx-auto bg-muted/30 border-none">
-                <CardContent className="p-6 text-left space-y-3">
-                   <div className="flex justify-between border-b pb-2"><span className="text-muted-foreground">Service</span> <span className="font-bold">{selectedService?.name}</span></div>
-                   <div className="flex justify-between border-b pb-2"><span className="text-muted-foreground">Barber</span> <span className="font-bold">{selectedBarber?.name}</span></div>
-                   <div className="flex justify-between border-b pb-2"><span className="text-muted-foreground">Date</span> <span className="font-bold">{date && format(date, 'MMM do, yyyy')}</span></div>
-                   <div className="flex justify-between"><span className="text-muted-foreground">Time</span> <span className="font-bold">{selectedTime}</span></div>
-                </CardContent>
-             </Card>
+             <p className="text-muted-foreground mb-8">Your appointment is scheduled. We've sent a confirmation to your email.</p>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+               <Card className="bg-muted/30 border-none">
+                  <CardContent className="p-6 text-left space-y-3">
+                     <div className="flex justify-between border-b pb-2"><span className="text-muted-foreground">Service</span> <span className="font-bold">{selectedService?.name}</span></div>
+                     <div className="flex justify-between border-b pb-2"><span className="text-muted-foreground">Barber</span> <span className="font-bold">{selectedBarber?.name}</span></div>
+                     <div className="flex justify-between border-b pb-2"><span className="text-muted-foreground">Date</span> <span className="font-bold">{date && format(date, 'MMM do, yyyy')}</span></div>
+                     <div className="flex justify-between"><span className="text-muted-foreground">Time</span> <span className="font-bold">{selectedTime}</span></div>
+                  </CardContent>
+               </Card>
+               {aiGeneratedImage && (
+                 <Card className="overflow-hidden border-accent/20 bg-accent/5">
+                   <CardContent className="p-0 relative aspect-square">
+                     <Image src={aiGeneratedImage} alt="Chosen Style" fill className="object-cover" />
+                     <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-2 text-white text-[10px] font-bold text-center">
+                       AI VISUALIZED STYLE
+                     </div>
+                   </CardContent>
+                 </Card>
+               )}
+             </div>
              <div className="mt-8 flex gap-4 justify-center">
                 <Link href="/">
                   <Button variant="outline" className="rounded-full">Back to Home</Button>
@@ -188,10 +345,10 @@ export default function BookingPage() {
       <Navbar />
       
       <main className="pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
-        {step < 4 && (
+        {step < 5 && (
           <div className="mb-12">
             <div className="flex justify-between items-center mb-4">
-              {['Service', 'Barber', 'Time'].map((label, idx) => (
+              {['Service', 'AI Style', 'Barber', 'Time'].map((label, idx) => (
                 <div key={label} className="flex flex-col items-center flex-1">
                    <div className={cn("w-10 h-10 rounded-full flex items-center justify-center font-bold mb-2 transition-colors", 
                     step > idx + 1 ? "bg-green-500 text-white" : step === idx + 1 ? "bg-primary text-white" : "bg-muted text-muted-foreground")}>
@@ -202,7 +359,7 @@ export default function BookingPage() {
               ))}
             </div>
             <div className="h-2 bg-muted rounded-full overflow-hidden">
-               <div className="h-full bg-primary transition-all duration-500" style={{ width: `${(step / 3) * 100}%` }}></div>
+               <div className="h-full bg-primary transition-all duration-500" style={{ width: `${(step / 4) * 100}%` }}></div>
             </div>
           </div>
         )}
@@ -211,7 +368,7 @@ export default function BookingPage() {
           {renderStep()}
         </div>
 
-        {step < 4 && (
+        {step < 5 && (
           <div className="mt-12 flex items-center justify-between pt-8 border-t">
             <Button 
               variant="outline" 
@@ -222,12 +379,12 @@ export default function BookingPage() {
               <ChevronLeft className="w-4 h-4 mr-2" /> Back
             </Button>
             
-            {step < 3 ? (
+            {step < 4 ? (
               <Button 
                 onClick={handleNextStep}
                 className="rounded-full px-8 bg-primary hover:bg-primary/90"
               >
-                Next Step <ChevronRight className="w-4 h-4 ml-2" />
+                {step === 2 ? "Continue with this look" : "Next Step"} <ChevronRight className="w-4 h-4 ml-2" />
               </Button>
             ) : (
               <Button 
@@ -246,6 +403,3 @@ export default function BookingPage() {
     </div>
   );
 }
-
-import Link from "next/link";
-import { RefreshCw } from "lucide-react";
