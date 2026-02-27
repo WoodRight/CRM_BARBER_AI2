@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -12,18 +11,19 @@ import Image from "next/image";
 import { aiHairstyleTryOn } from "@/ai/flows/ai-hairstyle-try-on";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
+import Link from "next/link";
 
 const HAIRSTYLES = [
-  "Buzz Cut",
-  "Classic Pompadour",
-  "Short Textured Quiff",
-  "Sleek Side Part",
-  "Long Curly Hair",
-  "Top Knot Man Bun",
-  "Taper Fade",
-  "Mohawk",
-  "Viking Braids",
-  "Mid-Length Surfer Hair"
+  "Бокс",
+  "Классический Помпадур",
+  "Текстурированный Квифф",
+  "Пробор на бок",
+  "Длинные кудри",
+  "Пучок (Man Bun)",
+  "Тейпер Фейд",
+  "Ирокез",
+  "Викингские косы",
+  "Средняя длина (Сёрфер)"
 ];
 
 export default function VisualizerPage() {
@@ -51,18 +51,17 @@ export default function VisualizerPage() {
     const styleDescription = customStyle || selectedStyle;
     
     if (!photo) {
-      toast({ variant: "destructive", title: "Missing Photo", description: "Please upload a photo of yourself first." });
+      toast({ variant: "destructive", title: "Загрузите фото", description: "Пожалуйста, сначала загрузите свое фото." });
       return;
     }
     if (!styleDescription) {
-      toast({ variant: "destructive", title: "Select a Style", description: "Please pick a hairstyle or describe one." });
+      toast({ variant: "destructive", title: "Выберите стиль", description: "Пожалуйста, выберите прическу или опишите ее." });
       return;
     }
 
     setLoading(true);
     setProgress(10);
     
-    // Fake progress animation
     const timer = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 90) return prev;
@@ -77,9 +76,9 @@ export default function VisualizerPage() {
       });
       setGeneratedImage(result.generatedHairstyleImage);
       setProgress(100);
-      toast({ title: "Style Generated!", description: "The AI has finished rendering your new look." });
+      toast({ title: "Стиль создан!", description: "ИИ завершил обработку вашего нового образа." });
     } catch (error) {
-      toast({ variant: "destructive", title: "Generation Failed", description: "Something went wrong while applying the style." });
+      toast({ variant: "destructive", title: "Ошибка", description: "Что-то пошло не так при применении стиля." });
     } finally {
       setLoading(false);
       clearInterval(timer);
@@ -92,21 +91,20 @@ export default function VisualizerPage() {
       
       <main className="pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="mb-10 text-center">
-          <h1 className="text-4xl font-headline font-bold mb-4">AI Hairstyle <span className="text-accent">Visualizer</span></h1>
+          <h1 className="text-4xl font-headline font-bold mb-4">ИИ-визуализатор <span className="text-accent">причесок</span></h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            See your new transformation before you book. Upload a clear photo of your face and pick a style to get started.
+            Увидьте свое преображение до того, как запишетесь. Загрузите четкое фото лица и выберите стиль.
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Controls Column */}
           <div className="lg:col-span-1 space-y-6">
             <Card className="bg-card border-border shadow-xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <User className="w-5 h-5 text-primary" /> Step 1: Upload Photo
+                  <User className="w-5 h-5 text-primary" /> Шаг 1: Загрузка фото
                 </CardTitle>
-                <CardDescription>A clear, front-facing portrait works best.</CardDescription>
+                <CardDescription>Лучше всего подходит четкий портрет анфас.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div 
@@ -124,7 +122,7 @@ export default function VisualizerPage() {
                     <div className="relative aspect-square w-full rounded-lg overflow-hidden border border-border shadow-sm mx-auto">
                        <Image src={photo} alt="Preview" fill className="object-cover" />
                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity">
-                          <p className="text-white text-sm font-medium">Change Photo</p>
+                          <p className="text-white text-sm font-medium">Изменить фото</p>
                        </div>
                     </div>
                   ) : (
@@ -132,8 +130,8 @@ export default function VisualizerPage() {
                       <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-2">
                         <Upload className="text-muted-foreground w-6 h-6" />
                       </div>
-                      <p className="text-sm font-medium">Click to upload photo</p>
-                      <p className="text-xs text-muted-foreground">JPG, PNG, WebP up to 5MB</p>
+                      <p className="text-sm font-medium">Нажмите для загрузки</p>
+                      <p className="text-xs text-muted-foreground">JPG, PNG, WebP до 5МБ</p>
                     </div>
                   )}
                 </div>
@@ -143,12 +141,12 @@ export default function VisualizerPage() {
             <Card className="bg-card border-border shadow-xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Scissors className="w-5 h-5 text-accent" /> Step 2: Choose Style
+                  <Scissors className="w-5 h-5 text-accent" /> Шаг 2: Выбор стиля
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <Label>Preset Styles</Label>
+                  <Label>Готовые стили</Label>
                   <div className="grid grid-cols-2 gap-2">
                     {HAIRSTYLES.map((style) => (
                       <Button
@@ -168,10 +166,10 @@ export default function VisualizerPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="custom-style">Custom Description</Label>
+                  <Label htmlFor="custom-style">Свое описание</Label>
                   <Input 
                     id="custom-style"
-                    placeholder="e.g. 'Curly top with skin fade'" 
+                    placeholder="Например: 'Кудри сверху и фейд по бокам'" 
                     className="bg-muted/50 border-border focus:ring-accent"
                     value={customStyle}
                     onChange={(e) => {
@@ -188,11 +186,11 @@ export default function VisualizerPage() {
                 >
                   {loading ? (
                     <span className="flex items-center gap-2">
-                      <RefreshCw className="w-5 h-5 animate-spin" /> Rendering...
+                      <RefreshCw className="w-5 h-5 animate-spin" /> Рендеринг...
                     </span>
                   ) : (
                     <span className="flex items-center gap-2">
-                      <Sparkles className="w-5 h-5" /> Apply Style
+                      <Sparkles className="w-5 h-5" /> Применить стиль
                     </span>
                   )}
                 </Button>
@@ -200,15 +198,14 @@ export default function VisualizerPage() {
             </Card>
           </div>
 
-          {/* Results Column */}
           <div className="lg:col-span-2 space-y-6">
              <Card className="bg-card border-border shadow-xl h-full flex flex-col">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
-                    <span>Preview Result</span>
+                    <span>Результат превью</span>
                     {generatedImage && (
                       <Button variant="ghost" size="sm" className="text-accent" onClick={() => window.open(generatedImage)}>
-                        <Download className="w-4 h-4 mr-2" /> Download
+                        <Download className="w-4 h-4 mr-2" /> Скачать
                       </Button>
                     )}
                   </CardTitle>
@@ -222,16 +219,16 @@ export default function VisualizerPage() {
                           <Sparkles className="absolute inset-0 m-auto w-10 h-10 text-accent animate-pulse" />
                        </div>
                        <div className="space-y-3">
-                         <h3 className="text-xl font-semibold">AI is analyzing your features...</h3>
+                         <h3 className="text-xl font-semibold">ИИ анализирует ваши черты лица...</h3>
                          <Progress value={progress} className="h-2 bg-muted" />
-                         <p className="text-sm text-muted-foreground">Usually takes 10-15 seconds for a high-quality render.</p>
+                         <p className="text-sm text-muted-foreground">Обычно это занимает 10-15 секунд для качественного результата.</p>
                        </div>
                     </div>
                   ) : generatedImage ? (
                     <div className="relative w-full aspect-[4/5] max-w-lg rounded-2xl overflow-hidden shadow-2xl group">
                        <Image src={generatedImage} alt="AI Result" fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md px-6 py-3 rounded-full border border-white/20 text-white font-medium text-sm">
-                          New Look: {customStyle || selectedStyle}
+                          Новый образ: {customStyle || selectedStyle}
                        </div>
                     </div>
                   ) : (
@@ -239,17 +236,17 @@ export default function VisualizerPage() {
                        <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mb-4">
                          <Sparkles className="w-12 h-12" />
                        </div>
-                       <p className="text-lg font-medium">Your new look will appear here</p>
-                       <p className="text-sm">Complete the steps on the left to begin</p>
+                       <p className="text-lg font-medium">Ваш новый образ появится здесь</p>
+                       <p className="text-sm">Выполните шаги слева, чтобы начать</p>
                     </div>
                   )}
                 </CardContent>
                 {generatedImage && (
                   <div className="p-6 border-t border-border flex flex-col sm:flex-row gap-4 items-center justify-between bg-card">
-                     <p className="text-sm font-medium">Love this style? Book an appointment with our master barbers to make it a reality.</p>
+                     <p className="text-sm font-medium">Нравится этот стиль? Запишитесь к нашим мастерам, чтобы воплотить его в реальность.</p>
                      <Link href="/booking">
                        <Button variant="default" className="bg-accent hover:bg-accent/90 rounded-full px-8">
-                         Book This Cut
+                         Записаться на эту стрижку
                        </Button>
                      </Link>
                   </div>
@@ -261,5 +258,3 @@ export default function VisualizerPage() {
     </div>
   );
 }
-
-import Link from "next/link";

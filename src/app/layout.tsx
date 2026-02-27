@@ -1,11 +1,10 @@
-
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'StylePro AI | Modern Barbershop & AI Stylist',
-  description: 'Book your next haircut and try on new styles with AI.',
+  title: 'StylePro AI | Современный барбершоп и ИИ-стилист',
+  description: 'Запишитесь на стрижку и примерьте новые образы с помощью искусственного интеллекта.',
 };
 
 export default function RootLayout({
@@ -14,7 +13,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="ru" className="dark">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

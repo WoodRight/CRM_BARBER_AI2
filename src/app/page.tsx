@@ -1,4 +1,3 @@
-
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,24 +22,24 @@ export default function Home() {
               <div className="flex-1 text-center lg:text-left z-10">
                 <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 text-primary text-sm font-semibold mb-6 animate-pulse">
                   <Sparkles className="w-4 h-4" />
-                  AI-Powered Grooming Experience
+                  Уход за волосами с помощью ИИ
                 </div>
                 <h1 className="text-4xl md:text-6xl font-headline font-bold mb-6 leading-tight">
-                  Your Signature Look, <br />
-                  <span className="text-accent">Perfected by AI.</span>
+                  Ваш уникальный образ, <br />
+                  <span className="text-accent">доведенный до совершенства ИИ.</span>
                 </h1>
                 <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto lg:mx-0">
-                  Experience the future of barbershops. Try on styles virtually with our AI Stylist and book your perfect cut in seconds.
+                  Окунитесь в будущее барбершопов. Примерьте стили виртуально с нашим ИИ-стилистом и запишитесь на стрижку за считанные секунды.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                   <Link href="/booking">
                     <Button size="lg" className="rounded-full px-8 text-lg font-medium w-full sm:w-auto">
-                      Book Appointment
+                      Записаться
                     </Button>
                   </Link>
                   <Link href="/visualizer">
                     <Button size="lg" variant="outline" className="rounded-full px-8 text-lg font-medium border-accent text-accent hover:bg-accent hover:text-white transition-all w-full sm:w-auto">
-                      Try AI Stylist
+                      Попробовать ИИ-стилиста
                     </Button>
                   </Link>
                 </div>
@@ -68,27 +67,27 @@ export default function Home() {
         <section id="services" className="py-20 bg-secondary/50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-headline font-bold mb-4">Why StylePro AI?</h2>
-              <p className="text-muted-foreground max-w-xl mx-auto">We combine traditional craftsmanship with cutting-edge technology for the ultimate grooming experience.</p>
+              <h2 className="text-3xl md:text-4xl font-headline font-bold mb-4">Почему StylePro AI?</h2>
+              <p className="text-muted-foreground max-w-xl mx-auto">Мы сочетаем традиционное мастерство с передовыми технологиями для максимального результата.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {[
                 {
-                  title: "AI Visualization",
-                  desc: "Stop guessing. See exactly how a new cut or beard style looks on your face before the first clip.",
+                  title: "ИИ-визуализация",
+                  desc: "Хватит гадать. Посмотрите, как новая стрижка или борода будут смотреться на вашем лице до первого взмаха ножниц.",
                   icon: Sparkles,
                   color: "text-accent"
                 },
                 {
-                  title: "Master Barbers",
-                  desc: "Our team consists of industry veterans skilled in classic techniques and modern trends.",
+                  title: "Мастера-барберы",
+                  desc: "Наша команда состоит из ветеранов индустрии, владеющих как классическими техниками, так и современными трендами.",
                   icon: Scissors,
                   color: "text-primary"
                 },
                 {
-                  title: "Instant Booking",
-                  desc: "Real-time availability, secure payments, and instant reminders. Your time is valuable.",
+                  title: "Мгновенная запись",
+                  desc: "Наличие свободных мест в реальном времени, безопасные платежи и напоминания. Ваше время ценно.",
                   icon: Clock,
                   color: "text-green-500"
                 }
@@ -115,14 +114,14 @@ export default function Home() {
               
               <div className="flex-1 z-10">
                 <h2 className="text-3xl md:text-5xl font-headline font-bold text-white mb-6">
-                  Ready to try a new look?
+                  Готовы к новому образу?
                 </h2>
                 <p className="text-white/80 text-lg mb-8 leading-relaxed">
-                  Our advanced AI analyzer uses your photo to suggest the most flattering hairstyles based on your face shape and hair texture.
+                  Наш продвинутый ИИ-анализатор использует ваше фото, чтобы предложить наиболее подходящие прически на основе формы вашего лица и текстуры волос.
                 </p>
                 <Link href="/visualizer">
                   <Button size="lg" variant="secondary" className="rounded-full px-10 text-lg font-semibold bg-white text-primary hover:bg-white/90">
-                    Launch AI Stylist
+                    Запустить ИИ-стилиста
                   </Button>
                 </Link>
               </div>
@@ -163,28 +162,28 @@ export default function Home() {
                   <span className="text-xl font-headline font-bold">StylePro AI</span>
                 </div>
                 <p className="text-muted-foreground max-w-sm leading-relaxed mb-6">
-                  Modern grooming redefined. Combining artisanal barbering with artificial intelligence to help you look your absolute best.
+                  Переосмысление современного ухода. Сочетание ремесленного искусства барберинга с искусственным интеллектом, чтобы вы выглядели на все сто.
                 </p>
               </div>
               <div>
-                <h4 className="font-headline font-bold mb-6">Quick Links</h4>
+                <h4 className="font-headline font-bold mb-6">Ссылки</h4>
                 <ul className="space-y-4 text-muted-foreground">
-                  <li><Link href="/visualizer" className="hover:text-accent transition-colors">AI Stylist</Link></li>
-                  <li><Link href="/booking" className="hover:text-accent transition-colors">Book Now</Link></li>
-                  <li><Link href="/admin" className="hover:text-accent transition-colors">Owner Login</Link></li>
+                  <li><Link href="/visualizer" className="hover:text-accent transition-colors">ИИ-стилист</Link></li>
+                  <li><Link href="/booking" className="hover:text-accent transition-colors">Записаться</Link></li>
+                  <li><Link href="/admin" className="hover:text-accent transition-colors">Вход для владельца</Link></li>
                 </ul>
               </div>
               <div>
-                <h4 className="font-headline font-bold mb-6">Contact</h4>
+                <h4 className="font-headline font-bold mb-6">Контакты</h4>
                 <ul className="space-y-4 text-muted-foreground text-sm">
-                  <li>123 Grooming St, Style City</li>
-                  <li>Open: Mon-Sat, 9AM-8PM</li>
-                  <li>+1 (555) STYLE-PRO</li>
+                  <li>ул. Стрижек, 123, Город Стиля</li>
+                  <li>Часы: Пн-Сб, 9:00-20:00</li>
+                  <li>+7 (999) STYLE-PRO</li>
                 </ul>
               </div>
             </div>
             <div className="border-t border-border pt-8 text-center text-muted-foreground text-xs">
-              <p>&copy; {new Date().getFullYear()} StylePro AI Barbershop. All rights reserved.</p>
+              <p>&copy; {new Date().getFullYear()} StylePro AI Barbershop. Все права защищены.</p>
             </div>
           </div>
         </footer>

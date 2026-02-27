@@ -1,12 +1,12 @@
 'use server';
 /**
- * @fileOverview This flow allows clients to upload their photo and generate images
- *   of themselves with various suggested hairstyles using AI, so they can visually
- *   preview how different cuts would look on them.
+ * @fileOverview Этот процесс позволяет клиентам загружать свои фотографии и генерировать изображения
+ *   себя с различными предлагаемыми прическами с помощью ИИ, чтобы они могли визуально
+ *   увидеть, как разные стрижки будут смотреться на них.
  *
- * - aiHairstyleTryOn - A function that handles the AI hairstyle visualization process.
- * - AiHairstyleTryOnInput - The input type for the aiHairstyleTryOn function.
- * - AiHairstyleTryOnOutput - The return type for the aiHairstyleTryOn function.
+ * - aiHairstyleTryOn - Функция, обрабатывающая процесс ИИ-визуализации прически.
+ * - AiHairstyleTryOnInput - Тип входных данных для функции aiHairstyleTryOn.
+ * - AiHairstyleTryOnOutput - Тип возвращаемых данных для функции aiHairstyleTryOn.
  */
 
 import { ai } from '@/ai/genkit';
@@ -16,12 +16,12 @@ const AiHairstyleTryOnInputSchema = z.object({
   photoDataUri: z
     .string()
     .describe(
-      "A photo of the client, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+      "Фотография клиента в виде data URI, которая должна включать MIME-тип и использовать кодировку Base64. Ожидаемый формат: 'data:<mimetype>;base64,<encoded_data>'."
     ),
   hairstyleDescription: z
     .string()
     .describe(
-      'A description of the desired hairstyle to apply, e.g., "short buzz cut", "long curly hair", "classic pompadour", "sleek bob".'
+      'Описание желаемой прически, например, "короткий бокс", "длинные кудрявые волосы", "классический помпадур", "гладкий боб".'
     ),
 });
 export type AiHairstyleTryOnInput = z.infer<typeof AiHairstyleTryOnInputSchema>;
@@ -29,8 +29,8 @@ export type AiHairstyleTryOnInput = z.infer<typeof AiHairstyleTryOnInputSchema>;
 const AiHairstyleTryOnOutputSchema = z.object({
   generatedHairstyleImage: z
     .string()
-    .describe('The data URI of the generated image showing the client with the new hairstyle.')
-    .refine((val) => val.startsWith('data:image/'), 'Must be a data URI for an image. Expected format: data:image/<mime_type>;base64,<encoded_data>'),
+    .describe('Data URI сгенерированного изображения, показывающего клиента с новой прической.')
+    .refine((val) => val.startsWith('data:image/'), 'Должен быть data URI для изображения. Ожидаемый формат: data:image/<mime_type>;base64,<encoded_data>'),
 });
 export type AiHairstyleTryOnOutput = z.infer<typeof AiHairstyleTryOnOutputSchema>;
 
@@ -53,18 +53,18 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
         { media: { url: input.photoDataUri } },
         {
           text:
-            `Apply the following hairstyle to the person in the provided photo: ${input.hairstyleDescription}. ` +
-            `The new hairstyle should look natural, considering the person's head shape, facial features, and skin tone. ` +
-            `Maintain consistent lighting and image quality with the original photo.`,
+            `Примени следующую прическу к человеку на предоставленном фото: ${input.hairstyleDescription}. ` +
+            `Новая прическа должна выглядеть естественно, учитывая форму головы человека, черты лица и тон кожи. ` +
+            `Сохраняй освещение и качество изображения как на оригинальном фото.`,
         },
       ],
       config: {
-        responseModalities: ['TEXT', 'IMAGE'], // Required for Gemini 2.5 Flash Image
+        responseModalities: ['TEXT', 'IMAGE'],
       },
     });
 
     if (!media || !media.url) {
-      throw new Error('Failed to generate hairstyle image.');
+      throw new Error('Не удалось сгенерировать изображение прически.');
     }
 
     return { generatedHairstyleImage: media.url };

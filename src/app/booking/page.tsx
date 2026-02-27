@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -25,28 +24,29 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { format } from "date-fns";
+import { ru } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { aiHairstyleTryOn } from "@/ai/flows/ai-hairstyle-try-on";
 
 const SERVICES = [
-  { id: 1, name: "Signature Haircut", price: "$45", duration: "45 min", description: "Precision cut, wash, and style." },
-  { id: 2, name: "Beard Sculpt & Trim", price: "$30", duration: "30 min", description: "Edge cleanup and shaping." },
-  { id: 3, name: "The Works", price: "$70", duration: "75 min", description: "Full haircut + Beard sculpt + Hot towel." },
-  { id: 4, name: "Kid's Cut", price: "$25", duration: "30 min", description: "For our younger style pros (ages 5-12)." },
+  { id: 1, name: "Фирменная стрижка", price: "2500 ₽", duration: "45 мин", description: "Точная стрижка, мытье головы и укладка." },
+  { id: 2, name: "Скульптура и коррекция бороды", price: "1500 ₽", duration: "30 мин", description: "Очистка краев и придание формы." },
+  { id: 3, name: "Полный комплекс", price: "3500 ₽", duration: "75 мин", description: "Стрижка + Борода + Горячее полотенце." },
+  { id: 4, name: "Детская стрижка", price: "1200 ₽", duration: "30 мин", description: "Для наших юных профи (5-12 лет)." },
 ];
 
 const BARBERS = [
-  { id: 1, name: "Alex Rivers", role: "Master Barber", img: "https://picsum.photos/seed/alex/100/100" },
-  { id: 2, name: "Sarah Chen", role: "Senior Stylist", img: "https://picsum.photos/seed/sarah/100/100" },
-  { id: 3, name: "Marcus Thorne", role: "Grooming Expert", img: "https://picsum.photos/seed/marcus/100/100" },
+  { id: 1, name: "Алекс Риверс", role: "Топ-барбер", img: "https://picsum.photos/seed/alex/100/100" },
+  { id: 2, name: "Сара Чен", role: "Старший стилист", img: "https://picsum.photos/seed/sarah/100/100" },
+  { id: 3, name: "Маркус Торн", role: "Эксперт по уходу", img: "https://picsum.photos/seed/marcus/100/100" },
 ];
 
 const PRESET_STYLES = [
-  "Buzz Cut", "Classic Pompadour", "Taper Fade", "Textured Quiff", "Sleek Side Part"
+  "Бокс", "Классический Помпадур", "Фейд", "Текстурированный Квифф", "Пробор на бок"
 ];
 
-const TIME_SLOTS = ["09:00 AM", "10:00 AM", "11:00 AM", "01:00 PM", "02:00 PM", "03:00 PM", "04:30 PM", "05:30 PM"];
+const TIME_SLOTS = ["09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:30", "17:30"];
 
 export default function BookingPage() {
   const [step, setStep] = useState(1);
@@ -67,12 +67,11 @@ export default function BookingPage() {
 
   const handleNextStep = () => {
     if (step === 1 && !selectedService) {
-       toast({ variant: "destructive", title: "Missing Selection", description: "Please select a service." });
+       toast({ variant: "destructive", title: "Ничего не выбрано", description: "Пожалуйста, выберите услугу." });
        return;
     }
-    // Step 2 (AI) is optional, so we allow next
     if (step === 3 && !selectedBarber) {
-       toast({ variant: "destructive", title: "Missing Selection", description: "Please choose a barber." });
+       toast({ variant: "destructive", title: "Ничего не выбрано", description: "Пожалуйста, выберите мастера." });
        return;
     }
     setStep(prev => prev + 1);
@@ -92,11 +91,11 @@ export default function BookingPage() {
 
   const handleAiVisualize = async () => {
     if (!photo) {
-      toast({ variant: "destructive", title: "Upload Photo", description: "Please upload a photo first." });
+      toast({ variant: "destructive", title: "Загрузите фото", description: "Пожалуйста, сначала загрузите фото." });
       return;
     }
     if (!aiStyle) {
-      toast({ variant: "destructive", title: "Pick a Style", description: "Please choose or describe a style." });
+      toast({ variant: "destructive", title: "Выберите стиль", description: "Пожалуйста, выберите или опишите стиль." });
       return;
     }
 
@@ -111,9 +110,9 @@ export default function BookingPage() {
       });
       setAiGeneratedImage(result.generatedHairstyleImage);
       setAiProgress(100);
-      toast({ title: "Visualizer Ready", description: "AI has rendered your new style!" });
+      toast({ title: "Визуализация готова", description: "ИИ создал ваш новый образ!" });
     } catch (err) {
-      toast({ variant: "destructive", title: "AI Error", description: "Could not generate style. Please try again." });
+      toast({ variant: "destructive", title: "Ошибка ИИ", description: "Не удалось создать образ. Попробуйте еще раз." });
     } finally {
       setAiLoading(false);
       clearInterval(interval);
@@ -122,14 +121,14 @@ export default function BookingPage() {
 
   const handleConfirm = async () => {
     if (!selectedTime) {
-      toast({ variant: "destructive", title: "Missing Selection", description: "Please pick a time slot." });
+      toast({ variant: "destructive", title: "Ничего не выбрано", description: "Пожалуйста, выберите время." });
       return;
     }
     setIsSubmitting(true);
     await new Promise(r => setTimeout(r, 2000));
     setIsSubmitting(false);
     setStep(5);
-    toast({ title: "Appointment Booked!", description: "We've sent a confirmation to your email." });
+    toast({ title: "Запись подтверждена!", description: "Мы отправили подтверждение на вашу почту." });
   };
 
   const renderStep = () => {
@@ -137,7 +136,7 @@ export default function BookingPage() {
       case 1:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-headline font-bold mb-4">Select Service</h2>
+            <h2 className="text-2xl font-headline font-bold mb-4">Выберите услугу</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {SERVICES.map((service) => (
                 <Card 
@@ -167,18 +166,18 @@ export default function BookingPage() {
             <div className="flex flex-col md:flex-row justify-between items-start gap-4">
               <div>
                 <h2 className="text-2xl font-headline font-bold mb-2 flex items-center gap-2">
-                  <Sparkles className="w-6 h-6 text-accent" /> AI Stylist (Optional)
+                  <Sparkles className="w-6 h-6 text-accent" /> ИИ-стилист (Опционально)
                 </h2>
-                <p className="text-muted-foreground">Visualize your new look before we start cutting.</p>
+                <p className="text-muted-foreground">Посмотрите, как вы будете выглядеть, прежде чем мы начнем стричь.</p>
               </div>
-              <Button variant="ghost" className="text-muted-foreground" onClick={() => setStep(3)}>Skip this step <ChevronRight className="w-4 h-4 ml-1" /></Button>
+              <Button variant="ghost" className="text-muted-foreground" onClick={() => setStep(3)}>Пропустить <ChevronRight className="w-4 h-4 ml-1" /></Button>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="space-y-6">
                 <Card>
                   <CardContent className="pt-6 space-y-4">
-                    <Label>1. Upload your photo</Label>
+                    <Label>1. Загрузите фото</Label>
                     <div 
                       className="border-2 border-dashed rounded-xl p-4 text-center cursor-pointer hover:bg-muted/50 transition-colors h-48 flex flex-col items-center justify-center relative overflow-hidden"
                       onClick={() => document.getElementById('photo-input')?.click()}
@@ -189,13 +188,13 @@ export default function BookingPage() {
                       ) : (
                         <div className="flex flex-col items-center">
                           <Upload className="w-8 h-8 mb-2 text-muted-foreground" />
-                          <p className="text-sm">Click to upload portrait</p>
+                          <p className="text-sm">Нажмите, чтобы загрузить портрет</p>
                         </div>
                       )}
-                      {photo && <div className="absolute inset-0 flex items-center justify-center bg-black/20 text-white font-bold">Change Photo</div>}
+                      {photo && <div className="absolute inset-0 flex items-center justify-center bg-black/20 text-white font-bold">Изменить фото</div>}
                     </div>
 
-                    <Label>2. Pick or describe a style</Label>
+                    <Label>2. Выберите или опишите стиль</Label>
                     <div className="grid grid-cols-2 gap-2">
                       {PRESET_STYLES.map(s => (
                         <Button key={s} variant={aiStyle === s ? "default" : "outline"} size="sm" onClick={() => setAiStyle(s)} className="text-xs">
@@ -203,7 +202,7 @@ export default function BookingPage() {
                         </Button>
                       ))}
                     </div>
-                    <Input placeholder="Or describe manually..." value={aiStyle} onChange={(e) => setAiStyle(e.target.value)} />
+                    <Input placeholder="Или опишите сами..." value={aiStyle} onChange={(e) => setAiStyle(e.target.value)} />
                     
                     <Button 
                       className="w-full bg-accent hover:bg-accent/90 text-white font-bold h-12" 
@@ -211,7 +210,7 @@ export default function BookingPage() {
                       disabled={aiLoading}
                     >
                       {aiLoading ? <RefreshCw className="w-5 h-5 animate-spin mr-2" /> : <Sparkles className="w-5 h-5 mr-2" />}
-                      Generate Preview
+                      Создать превью
                     </Button>
                   </CardContent>
                 </Card>
@@ -221,14 +220,14 @@ export default function BookingPage() {
                 {aiLoading ? (
                   <div className="text-center p-8 w-full">
                     <Progress value={aiProgress} className="mb-4" />
-                    <p className="text-sm font-medium animate-pulse">AI is crafting your look...</p>
+                    <p className="text-sm font-medium animate-pulse">ИИ создает ваш образ...</p>
                   </div>
                 ) : aiGeneratedImage ? (
                   <Image src={aiGeneratedImage} alt="AI Result" fill className="object-cover" />
                 ) : (
                   <div className="text-center p-8 text-muted-foreground">
                     <Camera className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                    <p>Your AI preview will appear here</p>
+                    <p>Здесь появится ваш ИИ-образ</p>
                   </div>
                 )}
               </div>
@@ -238,7 +237,7 @@ export default function BookingPage() {
       case 3:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-headline font-bold mb-4">Choose Your Barber</h2>
+            <h2 className="text-2xl font-headline font-bold mb-4">Выберите мастера</h2>
             <div className="grid grid-cols-1 gap-4">
               {BARBERS.map((barber) => (
                 <Card 
@@ -264,7 +263,7 @@ export default function BookingPage() {
       case 4:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-headline font-bold mb-4">Select Date & Time</h2>
+            <h2 className="text-2xl font-headline font-bold mb-4">Выберите дату и время</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                <div className="bg-card border rounded-xl p-4 shadow-sm">
                  <Calendar
@@ -272,11 +271,12 @@ export default function BookingPage() {
                     selected={date}
                     onSelect={setDate}
                     className="rounded-md"
+                    locale={ru}
                     disabled={(date) => date < new Date() || date.getDay() === 0}
                  />
                </div>
                <div className="space-y-4">
-                 <h3 className="font-bold flex items-center gap-2"><Clock className="w-4 h-4 text-primary" /> Available Slots</h3>
+                 <h3 className="font-bold flex items-center gap-2"><Clock className="w-4 h-4 text-primary" /> Свободные окна</h3>
                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {TIME_SLOTS.map((time) => (
                       <Button
@@ -292,7 +292,7 @@ export default function BookingPage() {
                  <div className="bg-accent/10 border border-accent/20 rounded-lg p-4 mt-6">
                    <p className="text-sm text-accent font-medium flex items-center gap-2">
                      <CalendarIcon className="w-4 h-4" /> 
-                     {date ? format(date, 'EEEE, MMMM do') : 'Select a date'} at {selectedTime || '...'}
+                     {date ? format(date, 'EEEE, d MMMM', { locale: ru }) : 'Выберите дату'} в {selectedTime || '...'}
                    </p>
                  </div>
                </div>
@@ -305,23 +305,23 @@ export default function BookingPage() {
              <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-green-500/20">
                 <CheckCircle2 className="text-white w-10 h-10" />
              </div>
-             <h2 className="text-3xl font-headline font-bold mb-2">Booking Confirmed!</h2>
-             <p className="text-muted-foreground mb-8">Your appointment is scheduled. We've sent a confirmation to your email.</p>
+             <h2 className="text-3xl font-headline font-bold mb-2">Запись подтверждена!</h2>
+             <p className="text-muted-foreground mb-8">Ваш визит запланирован. Мы отправили подтверждение на вашу почту.</p>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
                <Card className="bg-muted/30 border-none">
                   <CardContent className="p-6 text-left space-y-3">
-                     <div className="flex justify-between border-b pb-2"><span className="text-muted-foreground">Service</span> <span className="font-bold">{selectedService?.name}</span></div>
-                     <div className="flex justify-between border-b pb-2"><span className="text-muted-foreground">Barber</span> <span className="font-bold">{selectedBarber?.name}</span></div>
-                     <div className="flex justify-between border-b pb-2"><span className="text-muted-foreground">Date</span> <span className="font-bold">{date && format(date, 'MMM do, yyyy')}</span></div>
-                     <div className="flex justify-between"><span className="text-muted-foreground">Time</span> <span className="font-bold">{selectedTime}</span></div>
+                     <div className="flex justify-between border-b pb-2"><span className="text-muted-foreground">Услуга</span> <span className="font-bold">{selectedService?.name}</span></div>
+                     <div className="flex justify-between border-b pb-2"><span className="text-muted-foreground">Мастер</span> <span className="font-bold">{selectedBarber?.name}</span></div>
+                     <div className="flex justify-between border-b pb-2"><span className="text-muted-foreground">Дата</span> <span className="font-bold">{date && format(date, 'd MMMM yyyy', { locale: ru })}</span></div>
+                     <div className="flex justify-between"><span className="text-muted-foreground">Время</span> <span className="font-bold">{selectedTime}</span></div>
                   </CardContent>
                </Card>
                {aiGeneratedImage && (
                  <Card className="overflow-hidden border-accent/20 bg-accent/5">
                    <CardContent className="p-0 relative aspect-square">
                      <Image src={aiGeneratedImage} alt="Chosen Style" fill className="object-cover" />
-                     <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-2 text-white text-[10px] font-bold text-center">
-                       AI VISUALIZED STYLE
+                     <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-2 text-white text-[10px] font-bold text-center uppercase">
+                       ИИ-визуализация
                      </div>
                    </CardContent>
                  </Card>
@@ -329,9 +329,9 @@ export default function BookingPage() {
              </div>
              <div className="mt-8 flex gap-4 justify-center">
                 <Link href="/">
-                  <Button variant="outline" className="rounded-full">Back to Home</Button>
+                  <Button variant="outline" className="rounded-full">На главную</Button>
                 </Link>
-                <Button className="rounded-full bg-primary" onClick={() => window.print()}>Save Details</Button>
+                <Button className="rounded-full bg-primary" onClick={() => window.print()}>Сохранить детали</Button>
              </div>
           </div>
         );
@@ -348,7 +348,7 @@ export default function BookingPage() {
         {step < 5 && (
           <div className="mb-12">
             <div className="flex justify-between items-center mb-4">
-              {['Service', 'AI Style', 'Barber', 'Time'].map((label, idx) => (
+              {['Услуга', 'ИИ-стиль', 'Мастер', 'Время'].map((label, idx) => (
                 <div key={label} className="flex flex-col items-center flex-1">
                    <div className={cn("w-10 h-10 rounded-full flex items-center justify-center font-bold mb-2 transition-colors", 
                     step > idx + 1 ? "bg-green-500 text-white" : step === idx + 1 ? "bg-primary text-white" : "bg-muted text-muted-foreground")}>
@@ -376,7 +376,7 @@ export default function BookingPage() {
               disabled={step === 1}
               className="rounded-full px-6"
             >
-              <ChevronLeft className="w-4 h-4 mr-2" /> Back
+              <ChevronLeft className="w-4 h-4 mr-2" /> Назад
             </Button>
             
             {step < 4 ? (
@@ -384,7 +384,7 @@ export default function BookingPage() {
                 onClick={handleNextStep}
                 className="rounded-full px-8 bg-primary hover:bg-primary/90"
               >
-                {step === 2 ? "Continue with this look" : "Next Step"} <ChevronRight className="w-4 h-4 ml-2" />
+                {step === 2 ? "Продолжить с этим образом" : "Следующий шаг"} <ChevronRight className="w-4 h-4 ml-2" />
               </Button>
             ) : (
               <Button 
@@ -393,7 +393,7 @@ export default function BookingPage() {
                 className="rounded-full px-10 bg-accent hover:bg-accent/90 text-white font-bold"
               >
                 {isSubmitting ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <CalendarIcon className="w-4 h-4 mr-2" />}
-                {isSubmitting ? "Processing..." : "Confirm Booking"}
+                {isSubmitting ? "Обработка..." : "Подтвердить запись"}
               </Button>
             )
             }

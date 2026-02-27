@@ -24,16 +24,16 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 const MOCK_BOOKINGS = [
-  { id: "BK-001", client: "John Doe", service: "Signature Haircut", barber: "Alex Rivers", date: "2024-05-20", time: "10:00 AM", status: "Confirmed", total: "$45" },
-  { id: "BK-002", client: "Michael Smith", service: "The Works", barber: "Sarah Chen", date: "2024-05-20", time: "11:30 AM", status: "In Progress", total: "$70" },
-  { id: "BK-003", client: "David Wilson", service: "Beard Sculpt", barber: "Marcus Thorne", date: "2024-05-20", time: "01:00 PM", status: "Pending", total: "$30" },
-  { id: "BK-004", client: "James Brown", service: "Kid's Cut", barber: "Alex Rivers", date: "2024-05-21", time: "09:00 AM", status: "Confirmed", total: "$25" },
+  { id: "BK-001", client: "Иван Иванов", service: "Фирменная стрижка", barber: "Алекс Риверс", date: "2024-05-20", time: "10:00", status: "Подтверждено", total: "2500 ₽" },
+  { id: "BK-002", client: "Михаил Кузнецов", service: "Полный комплекс", barber: "Сара Чен", date: "2024-05-20", time: "11:30", status: "В процессе", total: "3500 ₽" },
+  { id: "BK-003", client: "Давид Вильсон", service: "Скульптура бороды", barber: "Маркус Торн", date: "2024-05-20", time: "13:00", status: "Ожидание", total: "1500 ₽" },
+  { id: "BK-004", client: "Дмитрий Петров", service: "Детская стрижка", barber: "Алекс Риверс", date: "2024-05-21", time: "09:00", status: "Подтверждено", total: "1200 ₽" },
 ];
 
 const MOCK_CLIENTS = [
-  { id: "CL-001", name: "John Doe", email: "john@example.com", phone: "+1 234 567 8901", lastVisit: "2024-04-15", totalSpent: "$240", loyalty: "Platinum" },
-  { id: "CL-002", name: "Michael Smith", email: "mike@smith.org", phone: "+1 987 654 3210", lastVisit: "2024-05-01", totalSpent: "$180", loyalty: "Gold" },
-  { id: "CL-003", name: "David Wilson", email: "dave.w@gmail.com", phone: "+1 555 123 4567", lastVisit: "2024-05-18", totalSpent: "$45", loyalty: "Standard" },
+  { id: "CL-001", name: "Иван Иванов", email: "ivan@example.com", phone: "+7 900 123 4567", lastVisit: "2024-04-15", totalSpent: "12500 ₽", loyalty: "Платина" },
+  { id: "CL-002", name: "Михаил Кузнецов", email: "mike@example.com", phone: "+7 911 222 3344", lastVisit: "2024-05-01", totalSpent: "8500 ₽", loyalty: "Золото" },
+  { id: "CL-003", name: "Давид Вильсон", email: "david@example.com", phone: "+7 955 666 7788", lastVisit: "2024-05-18", totalSpent: "1500 ₽", loyalty: "Стандарт" },
 ];
 
 export default function AdminDashboard() {
@@ -46,12 +46,12 @@ export default function AdminDashboard() {
       <main className="pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
           <div>
-            <h1 className="text-3xl font-headline font-bold">Admin <span className="text-accent">Dashboard</span></h1>
-            <p className="text-muted-foreground">Manage your business, clients, and team in one place.</p>
+            <h1 className="text-3xl font-headline font-bold">Панель <span className="text-accent">Администратора</span></h1>
+            <p className="text-muted-foreground">Управляйте бизнесом, клиентами и командой в одном месте.</p>
           </div>
           <div className="flex gap-2">
             <Button className="rounded-full bg-primary">
-              <UserPlus className="w-4 h-4 mr-2" /> Add Client
+              <UserPlus className="w-4 h-4 mr-2" /> Добавить клиента
             </Button>
             <Button variant="outline" className="rounded-full border-border">
               <Settings className="w-4 h-4" />
@@ -62,10 +62,10 @@ export default function AdminDashboard() {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           {[
-            { label: "Daily Revenue", value: "$1,240", icon: DollarSign, trend: "+12.5%", color: "text-green-500", bg: "bg-green-500/10" },
-            { label: "Active Bookings", value: "24", icon: Calendar, trend: "+3 this week", color: "text-accent", bg: "bg-accent/10" },
-            { label: "New Clients", value: "12", icon: Users, trend: "+5 today", color: "text-primary", bg: "bg-primary/10" },
-            { label: "Avg Service Value", value: "$52", icon: TrendingUp, trend: "+8.2%", color: "text-amber-500", bg: "bg-amber-500/10" },
+            { label: "Выручка за день", value: "45,000 ₽", icon: DollarSign, trend: "+12.5%", color: "text-green-500", bg: "bg-green-500/10" },
+            { label: "Активные записи", value: "24", icon: Calendar, trend: "+3 за неделю", color: "text-accent", bg: "bg-accent/10" },
+            { label: "Новые клиенты", value: "12", icon: Users, trend: "+5 сегодня", color: "text-primary", bg: "bg-primary/10" },
+            { label: "Средний чек", value: "2,800 ₽", icon: TrendingUp, trend: "+8.2%", color: "text-amber-500", bg: "bg-amber-500/10" },
           ].map((stat, i) => (
             <Card key={i} className="border-none shadow-md bg-card">
               <CardContent className="p-6">
@@ -87,16 +87,16 @@ export default function AdminDashboard() {
         <Tabs defaultValue="bookings" className="space-y-6">
           <TabsList className="bg-muted p-1 rounded-xl w-full sm:w-auto overflow-x-auto inline-flex whitespace-nowrap scrollbar-hide">
             <TabsTrigger value="bookings" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white">
-              <Clock className="w-4 h-4 mr-2" /> Bookings
+              <Clock className="w-4 h-4 mr-2" /> Записи
             </TabsTrigger>
             <TabsTrigger value="clients" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white">
-              <Users className="w-4 h-4 mr-2" /> Clients (CRM)
+              <Users className="w-4 h-4 mr-2" /> Клиенты (CRM)
             </TabsTrigger>
             <TabsTrigger value="team" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white">
-              <Briefcase className="w-4 h-4 mr-2" /> Barber Management
+              <Briefcase className="w-4 h-4 mr-2" /> Управление мастерами
             </TabsTrigger>
             <TabsTrigger value="services" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white">
-              <Scissors className="w-4 h-4 mr-2" /> Services
+              <Scissors className="w-4 h-4 mr-2" /> Услуги
             </TabsTrigger>
           </TabsList>
 
@@ -104,13 +104,13 @@ export default function AdminDashboard() {
             <Card className="border-border shadow-md">
               <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                 <div>
-                  <CardTitle>Upcoming Appointments</CardTitle>
-                  <CardDescription>View and manage scheduled cuts for today and tomorrow.</CardDescription>
+                  <CardTitle>Предстоящие визиты</CardTitle>
+                  <CardDescription>Просмотр и управление расписанием на сегодня и завтра.</CardDescription>
                 </div>
                 <div className="relative w-full max-w-sm hidden md:block">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input 
-                    placeholder="Search bookings..." 
+                    placeholder="Поиск записей..." 
                     className="pl-10 rounded-full bg-muted/50" 
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -122,12 +122,12 @@ export default function AdminDashboard() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>ID</TableHead>
-                      <TableHead>Client</TableHead>
-                      <TableHead>Service</TableHead>
-                      <TableHead>Barber</TableHead>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Amount</TableHead>
+                      <TableHead>Клиент</TableHead>
+                      <TableHead>Услуга</TableHead>
+                      <TableHead>Мастер</TableHead>
+                      <TableHead>Время</TableHead>
+                      <TableHead>Статус</TableHead>
+                      <TableHead>Сумма</TableHead>
                       <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -144,8 +144,8 @@ export default function AdminDashboard() {
                             variant="secondary" 
                             className={cn(
                               "text-xs font-semibold",
-                              bk.status === "Confirmed" ? "bg-green-500/10 text-green-500" : 
-                              bk.status === "In Progress" ? "bg-accent/10 text-accent" : "bg-amber-500/10 text-amber-500"
+                              bk.status === "Подтверждено" ? "bg-green-500/10 text-green-500" : 
+                              bk.status === "В процессе" ? "bg-accent/10 text-accent" : "bg-amber-500/10 text-amber-500"
                             )}
                           >
                             {bk.status}
@@ -166,18 +166,18 @@ export default function AdminDashboard() {
           <TabsContent value="clients" className="space-y-4">
              <Card className="border-border shadow-md">
               <CardHeader>
-                <CardTitle>Client CRM</CardTitle>
-                <CardDescription>Detailed profile and history of every customer.</CardDescription>
+                <CardTitle>База клиентов</CardTitle>
+                <CardDescription>Детальные профили и история каждого клиента.</CardDescription>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Client Name</TableHead>
-                      <TableHead>Loyalty</TableHead>
-                      <TableHead>Contact</TableHead>
-                      <TableHead>Last Visit</TableHead>
-                      <TableHead>Life-time Value</TableHead>
+                      <TableHead>Имя клиента</TableHead>
+                      <TableHead>Лояльность</TableHead>
+                      <TableHead>Контакт</TableHead>
+                      <TableHead>Последний визит</TableHead>
+                      <TableHead>LTV</TableHead>
                       <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -199,7 +199,7 @@ export default function AdminDashboard() {
                         <TableCell>{cl.lastVisit}</TableCell>
                         <TableCell className="font-bold text-green-500">{cl.totalSpent}</TableCell>
                         <TableCell>
-                          <Button variant="ghost" size="sm" className="text-primary font-semibold">View History</Button>
+                          <Button variant="ghost" size="sm" className="text-primary font-semibold">История</Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -211,9 +211,9 @@ export default function AdminDashboard() {
 
           <TabsContent value="team" className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { name: "Alex Rivers", role: "Master Barber", bookings: 124, rating: 4.9, status: "Active" },
-              { name: "Sarah Chen", role: "Senior Stylist", bookings: 98, rating: 5.0, status: "Active" },
-              { name: "Marcus Thorne", role: "Junior Barber", bookings: 45, rating: 4.7, status: "Break" },
+              { name: "Алекс Риверс", role: "Топ-барбер", bookings: 124, rating: 4.9, status: "Активен" },
+              { name: "Сара Чен", role: "Старший стилист", bookings: 98, rating: 5.0, status: "Активна" },
+              { name: "Маркус Торн", role: "Барбер-эксперт", bookings: 45, rating: 4.7, status: "Перерыв" },
             ].map((barber, i) => (
               <Card key={i} className="border-border bg-card overflow-hidden">
                 <div className="h-2 bg-primary"></div>
@@ -229,16 +229,16 @@ export default function AdminDashboard() {
                    </div>
                    <div className="grid grid-cols-2 gap-4 mb-6">
                       <div className="bg-muted/50 p-3 rounded-xl text-center">
-                        <p className="text-xs text-muted-foreground mb-1">Bookings</p>
+                        <p className="text-xs text-muted-foreground mb-1">Записи</p>
                         <p className="font-bold">{barber.bookings}</p>
                       </div>
                       <div className="bg-muted/50 p-3 rounded-xl text-center">
-                        <p className="text-xs text-muted-foreground mb-1">Rating</p>
+                        <p className="text-xs text-muted-foreground mb-1">Рейтинг</p>
                         <p className="font-bold text-accent">★ {barber.rating}</p>
                       </div>
                    </div>
                    <div className="flex gap-2">
-                     <Button variant="outline" className="flex-1 rounded-lg text-xs">Manage Schedule</Button>
+                     <Button variant="outline" className="flex-1 rounded-lg text-xs">Расписание</Button>
                      <Button className="rounded-lg bg-primary w-10 p-0"><Settings className="w-4 h-4" /></Button>
                    </div>
                 </CardContent>
@@ -249,7 +249,7 @@ export default function AdminDashboard() {
                   <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
                     <UserPlus className="w-6 h-6 text-muted-foreground" />
                   </div>
-                  <p className="font-bold text-sm">Add New Team Member</p>
+                  <p className="font-bold text-sm">Добавить мастера</p>
                </div>
             </Card>
           </TabsContent>
@@ -257,11 +257,11 @@ export default function AdminDashboard() {
           <TabsContent value="services">
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[
-                  { name: "Signature Haircut", price: 45, duration: 45, color: "text-blue-500" },
-                  { name: "Beard Sculpt & Trim", price: 30, duration: 30, color: "text-purple-500" },
-                  { name: "The Works", price: 70, duration: 75, color: "text-accent" },
-                  { name: "Hot Towel Shave", price: 25, duration: 25, color: "text-orange-500" },
-                  { name: "Hair Coloring", price: 60, duration: 90, color: "text-pink-500" },
+                  { name: "Фирменная стрижка", price: 2500, duration: 45, color: "text-blue-500" },
+                  { name: "Скульптура бороды", price: 1500, duration: 30, color: "text-purple-500" },
+                  { name: "Полный комплекс", price: 3500, duration: 75, color: "text-accent" },
+                  { name: "Бритье горячим полотенцем", price: 1200, duration: 25, color: "text-orange-500" },
+                  { name: "Окрашивание волос", price: 3000, duration: 90, color: "text-pink-500" },
                 ].map((s, i) => (
                   <Card key={i} className="bg-card border-border hover:border-accent transition-colors cursor-pointer group">
                     <CardContent className="p-6">
@@ -270,15 +270,15 @@ export default function AdminDashboard() {
                            <Scissors className={`w-6 h-6 ${s.color}`} />
                          </div>
                          <div className="text-right">
-                           <p className="text-2xl font-bold text-primary">${s.price}</p>
-                           <p className="text-xs text-muted-foreground">{s.duration} min</p>
+                           <p className="text-2xl font-bold text-primary">{s.price} ₽</p>
+                           <p className="text-xs text-muted-foreground">{s.duration} мин</p>
                          </div>
                        </div>
                        <h3 className="font-headline font-bold text-lg mb-2">{s.name}</h3>
-                       <p className="text-sm text-muted-foreground mb-4">Premium grooming service tailored to your style.</p>
+                       <p className="text-sm text-muted-foreground mb-4">Премиальный уход, подобранный под ваш стиль.</p>
                        <div className="flex gap-2">
-                         <Button variant="ghost" size="sm" className="rounded-lg text-xs">Edit Details</Button>
-                         <Button variant="ghost" size="sm" className="rounded-lg text-xs text-destructive">Disable</Button>
+                         <Button variant="ghost" size="sm" className="rounded-lg text-xs">Изменить</Button>
+                         <Button variant="ghost" size="sm" className="rounded-lg text-xs text-destructive">Отключить</Button>
                        </div>
                     </CardContent>
                   </Card>
