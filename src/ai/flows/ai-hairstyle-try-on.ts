@@ -45,7 +45,7 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
   async (input) => {
     let finalPhotoUri = input.photoDataUri;
 
-    // Если это URL, скачиваем его на сервере
+    // Если это URL, скачиваем его на сервере и оптимизируем размер
     if (finalPhotoUri.startsWith('http')) {
       try {
         const response = await fetch(finalPhotoUri, {
@@ -68,13 +68,14 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
     }
 
     try {
-      // Модель gemini-2.5-flash-image требует четкого разделения контента
+      // Для модели gemini-2.5-flash-image важно, чтобы изображение было не слишком большим.
+      // API Gemini ожидает Part[] в prompt.
       const response = await ai.generate({
         model: 'googleai/gemini-2.5-flash-image',
         prompt: [
           { media: { url: finalPhotoUri } },
           {
-            text: `You are a professional hair stylist. Change the hairstyle of the person in this photo to: ${input.hairstyleDescription}. Keep the face, background and clothes identical. Only change the hair. Return only the edited image.`
+            text: `You are an expert barber. Edit this photo. Replace the current hairstyle with exactly: ${input.hairstyleDescription}. Keep the facial features, clothes, and background exactly the same. Output ONLY the resulting image.`
           },
         ],
         config: {
@@ -91,22 +92,21 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
       const media = response.media;
 
       if (!media || !media.url) {
-        throw new Error('ИИ не вернул изображение. Попробуйте использовать более простое описание прически или другое фото.');
+        throw new Error('ИИ не смог изменить прическу. Попробуйте использовать более простое описание прически или другое фото.');
       }
 
       return { generatedHairstyleImage: media.url };
     } catch (error: any) {
-      console.error('AI Flow Error:', error);
+      console.error('AI Flow Error Detail:', error);
       
       const errMsg = error.message || '';
       
-      // Обработка типичных ошибок API
       if (errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED')) {
-        throw new Error('Лимит запросов исчерпан. Подождите 60 секунд.');
+        throw new Error('Лимит запросов исчерпан. Пожалуйста, подождите 60 секунд.');
       }
 
       if (errMsg.includes('400') || errMsg.includes('invalid_argument')) {
-        throw new Error('Ошибка: Ваше фото слишком большое или формат не поддерживается. Попробуйте уменьшить размер фото (до 2МБ) или использовать пример.');
+        throw new Error('Ошибка параметров: попробуйте использовать фото меньшего размера (скриншот) или выберите другой стиль.');
       }
       
       throw new Error(`Ошибка ИИ: ${errMsg}`);
