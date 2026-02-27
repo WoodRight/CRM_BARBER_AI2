@@ -22,13 +22,6 @@ export default function AdminLoginPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (!authLoading && user) {
-      // Если пользователь уже вошел, проверяем его права
-      checkAdminStatus(user.uid);
-    }
-  }, [user, authLoading]);
-
   const checkAdminStatus = async (uid: string) => {
     if (!db) return;
     try {
@@ -37,26 +30,37 @@ export default function AdminLoginPage() {
       if (adminSnap.exists()) {
         router.push("/admin");
       } else {
-        // Если не админ — выходим
+        // Если пользователь вошел в Auth, но его нет в списке админов Firestore
         if (auth) await signOut(auth);
         toast({
           variant: "destructive",
           title: "Доступ запрещен",
-          description: "Ваш UID не найден в списке администраторов (roles_admin)."
+          description: "Ваш UID отсутствует в коллекции 'roles_admin'. Проверьте настройки базы данных."
         });
       }
     } catch (e: any) {
-      console.error(e);
+      console.error("Admin check error:", e);
+      toast({
+        variant: "destructive",
+        title: "Ошибка проверки",
+        description: "Не удалось проверить права администратора."
+      });
     }
   };
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      checkAdminStatus(user.uid);
+    }
+  }, [user, authLoading]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!auth || !db) {
       toast({
         variant: "destructive",
-        title: "Ошибка конфигурации",
-        description: "Сервисы Firebase не инициализированы. Проверьте src/firebase/config.ts"
+        title: "Сервисы не готовы",
+        description: "Проверьте инициализацию Firebase в src/firebase/config.ts"
       });
       return;
     }
@@ -64,22 +68,14 @@ export default function AdminLoginPage() {
     setLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      // После успешного входа проверяем наличие роли в Firestore
       await checkAdminStatus(userCredential.user.uid);
     } catch (error: any) {
-      console.error("Auth Error:", error.code, error.message);
       let message = "Неверный email или пароль.";
-      
       if (error.code === 'auth/configuration-not-found' || error.code === 'auth/operation-not-allowed') {
-        message = "Включите метод 'Email/Password' в консоли Firebase (Authentication -> Sign-in method).";
-      } else if (error.code === 'auth/invalid-api-key') {
-        message = "Неверный API Key в src/firebase/config.ts.";
+        message = "Метод Email/Password не включен в Firebase Console.";
       } else if (error.code === 'auth/user-not-found') {
-        message = "Пользователь с таким email не найден.";
-      } else if (error.code === 'auth/wrong-password') {
-        message = "Неверный пароль.";
+        message = "Пользователь не найден.";
       }
-
       toast({ 
         variant: "destructive", 
         title: "Ошибка входа", 
@@ -108,7 +104,7 @@ export default function AdminLoginPage() {
               <ShieldCheck className="w-6 h-6" />
             </div>
             <CardTitle className="text-2xl font-headline">Вход в <span className="text-primary">Панель</span></CardTitle>
-            <CardDescription>Только для авторизованных сотрудников BarBerTok</CardDescription>
+            <CardDescription>Только для авторизованных сотрудников</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
@@ -120,6 +116,7 @@ export default function AdminLoginPage() {
                   onChange={(e) => setEmail(e.target.value)} 
                   required 
                   disabled={loading}
+                  autoComplete="email"
                 />
               </div>
               <div className="space-y-2">
@@ -130,19 +127,21 @@ export default function AdminLoginPage() {
                   onChange={(e) => setPassword(e.target.value)} 
                   required 
                   disabled={loading}
+                  autoComplete="current-password"
                 />
               </div>
               <Button type="submit" className="w-full h-11 font-bold" disabled={loading}>
                 {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                {loading ? "Проверка прав..." : "Войти в систему"}
+                {loading ? "Авторизация..." : "Войти"}
               </Button>
             </form>
             <div className="mt-6 p-4 bg-muted/50 rounded-lg text-[10px] text-muted-foreground leading-relaxed">
-              <p className="font-bold mb-1 uppercase tracking-widest">Инструкция:</p>
+              <p className="font-bold mb-1 uppercase tracking-widest text-primary">Если вход не удается:</p>
               <ol className="list-decimal list-inside space-y-1">
-                <li>Включите Email/Password в Firebase Console.</li>
-                <li>Создайте коллекцию <code className="text-primary">roles_admin</code>.</li>
-                <li>Добавьте документ с ID равным вашему UID и полем <code className="text-primary">{"role": "admin"}</code>.</li>
+                <li>Включите Email/Password в Firebase Console (Authentication).</li>
+                <li>Создайте коллекцию "roles_admin" в Firestore.</li>
+                <li>Добавьте документ, где ID — ваш UID (возьмите из раздела Users).</li>
+                <li>Внутри документа добавьте любое поле, например: role: "admin".</li>
               </ol>
             </div>
           </CardContent>
