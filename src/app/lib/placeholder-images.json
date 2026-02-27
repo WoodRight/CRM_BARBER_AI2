@@ -30,6 +30,12 @@
       "description": "Modern barbershop interior",
       "imageUrl": "https://picsum.photos/seed/shop/800/600",
       "imageHint": "modern barbershop"
+    },
+    {
+      "id": "sample-man-portrait",
+      "description": "Portrait of a man for AI hairstyle testing",
+      "imageUrl": "https://picsum.photos/seed/man-sample/600/800",
+      "imageHint": "man portrait"
     }
   ]
 }

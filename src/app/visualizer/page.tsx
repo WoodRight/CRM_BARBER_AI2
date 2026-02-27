@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -6,12 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, Sparkles, RefreshCw, Download, Scissors, User } from "lucide-react";
+import { Upload, Sparkles, RefreshCw, Download, Scissors, User, Image as ImageIcon } from "lucide-react";
 import Image from "next/image";
 import { aiHairstyleTryOn } from "@/ai/flows/ai-hairstyle-try-on";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
+import { PlaceHolderImages } from "@/lib/placeholder-images";
 
 const HAIRSTYLES = [
   "Бокс",
@@ -35,6 +37,8 @@ export default function VisualizerPage() {
   const [progress, setProgress] = useState(0);
   const { toast } = useToast();
 
+  const sampleImage = PlaceHolderImages.find(img => img.id === "sample-man-portrait");
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -47,11 +51,19 @@ export default function VisualizerPage() {
     }
   };
 
+  const useSamplePhoto = () => {
+    if (sampleImage) {
+      setPhoto(sampleImage.imageUrl);
+      setGeneratedImage(null);
+      toast({ title: "Загружен пример", description: "Используется демонстрационное фото для теста." });
+    }
+  };
+
   const handleGenerate = async () => {
     const styleDescription = customStyle || selectedStyle;
     
     if (!photo) {
-      toast({ variant: "destructive", title: "Загрузите фото", description: "Пожалуйста, сначала загрузите свое фото." });
+      toast({ variant: "destructive", title: "Загрузите фото", description: "Пожалуйста, сначала загрузите свое фото или используйте пример." });
       return;
     }
     if (!styleDescription) {
@@ -70,8 +82,21 @@ export default function VisualizerPage() {
     }, 1500);
 
     try {
+      // If it's the placeholder URL, we need to handle it or use a data URI if possible. 
+      // For the demo to work robustly with our server action, we'll fetch the image and convert to base64 if it's external.
+      let photoToProcess = photo;
+      if (photo.startsWith('http')) {
+        const response = await fetch(photo);
+        const blob = await response.blob();
+        photoToProcess = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+      }
+
       const result = await aiHairstyleTryOn({
-        photoDataUri: photo,
+        photoDataUri: photoToProcess,
         hairstyleDescription: styleDescription,
       });
       setGeneratedImage(result.generatedHairstyleImage);
@@ -93,7 +118,7 @@ export default function VisualizerPage() {
         <div className="mb-10 text-center">
           <h1 className="text-4xl font-headline font-bold mb-4">ИИ-визуализатор <span className="text-accent">причесок</span></h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Увидьте свое преображение до того, как запишетесь. Загрузите четкое фото лица и выберите стиль.
+            Увидьте свое преображение до того, как запишетесь. Загрузите четкое фото лица или используйте наш пример.
           </p>
         </div>
 
@@ -104,11 +129,11 @@ export default function VisualizerPage() {
                 <CardTitle className="flex items-center gap-2">
                   <User className="w-5 h-5 text-primary" /> Шаг 1: Загрузка фото
                 </CardTitle>
-                <CardDescription>Лучше всего подходит четкий портрет анфас.</CardDescription>
+                <CardDescription>Загрузите свой портрет или используйте демо-фото.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div 
-                  className={`border-2 border-dashed rounded-xl p-8 transition-all duration-300 text-center cursor-pointer ${photo ? 'border-primary/50 bg-primary/5' : 'border-border hover:border-accent'}`}
+                  className={`border-2 border-dashed rounded-xl p-6 transition-all duration-300 text-center cursor-pointer ${photo ? 'border-primary/50 bg-primary/5' : 'border-border hover:border-accent'}`}
                   onClick={() => document.getElementById('photo-upload')?.click()}
                 >
                   <input 
@@ -126,15 +151,20 @@ export default function VisualizerPage() {
                        </div>
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center gap-2">
+                    <div className="flex flex-col items-center gap-2 py-4">
                       <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-2">
                         <Upload className="text-muted-foreground w-6 h-6" />
                       </div>
                       <p className="text-sm font-medium">Нажмите для загрузки</p>
-                      <p className="text-xs text-muted-foreground">JPG, PNG, WebP до 5МБ</p>
+                      <p className="text-xs text-muted-foreground">JPG, PNG до 5МБ</p>
                     </div>
                   )}
                 </div>
+                {!photo && (
+                  <Button variant="outline" className="w-full text-xs h-9 border-dashed" onClick={(e) => { e.stopPropagation(); useSamplePhoto(); }}>
+                    <ImageIcon className="w-3.5 h-3.5 mr-2" /> Использовать пример мужчины
+                  </Button>
+                )}
               </CardContent>
             </Card>
 

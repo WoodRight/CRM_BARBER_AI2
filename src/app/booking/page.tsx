@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -19,7 +20,8 @@ import {
   Sparkles,
   Upload,
   RefreshCw,
-  Camera
+  Camera,
+  Image as ImageIcon
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -28,6 +30,7 @@ import { ru } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { aiHairstyleTryOn } from "@/ai/flows/ai-hairstyle-try-on";
+import { PlaceHolderImages } from "@/lib/placeholder-images";
 
 const SERVICES = [
   { id: 1, name: "Фирменная стрижка", price: "2500 ₽", duration: "45 мин", description: "Точная стрижка, мытье головы и укладка." },
@@ -64,6 +67,7 @@ export default function BookingPage() {
   const [aiStyle, setAiStyle] = useState("");
 
   const { toast } = useToast();
+  const sampleImage = PlaceHolderImages.find(img => img.id === "sample-man-portrait");
 
   const handleNextStep = () => {
     if (step === 1 && !selectedService) {
@@ -89,9 +93,17 @@ export default function BookingPage() {
     }
   };
 
+  const useSamplePhoto = () => {
+    if (sampleImage) {
+      setPhoto(sampleImage.imageUrl);
+      setAiGeneratedImage(null);
+      toast({ title: "Загружен пример", description: "Используется демо-фото для ИИ-примерки." });
+    }
+  };
+
   const handleAiVisualize = async () => {
     if (!photo) {
-      toast({ variant: "destructive", title: "Загрузите фото", description: "Пожалуйста, сначала загрузите фото." });
+      toast({ variant: "destructive", title: "Загрузите фото", description: "Пожалуйста, загрузите фото или используйте пример." });
       return;
     }
     if (!aiStyle) {
@@ -104,8 +116,19 @@ export default function BookingPage() {
     const interval = setInterval(() => setAiProgress(p => p < 90 ? p + 10 : p), 1200);
 
     try {
+      let photoToProcess = photo;
+      if (photo.startsWith('http')) {
+        const response = await fetch(photo);
+        const blob = await response.blob();
+        photoToProcess = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+      }
+
       const result = await aiHairstyleTryOn({
-        photoDataUri: photo,
+        photoDataUri: photoToProcess,
         hairstyleDescription: aiStyle,
       });
       setAiGeneratedImage(result.generatedHairstyleImage);
@@ -193,6 +216,11 @@ export default function BookingPage() {
                       )}
                       {photo && <div className="absolute inset-0 flex items-center justify-center bg-black/20 text-white font-bold">Изменить фото</div>}
                     </div>
+                    {!photo && (
+                      <Button variant="outline" className="w-full text-xs h-8 border-dashed" onClick={(e) => { e.stopPropagation(); useSamplePhoto(); }}>
+                        <ImageIcon className="w-3.5 h-3.5 mr-2" /> Использовать демо-фото мужчины
+                      </Button>
+                    )}
 
                     <Label>2. Выберите или опишите стиль</Label>
                     <div className="grid grid-cols-2 gap-2">
