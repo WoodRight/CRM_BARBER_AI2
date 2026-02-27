@@ -1,0 +1,48 @@
+
+{
+  "entities": {
+    "Booking": {
+      "title": "Booking",
+      "description": "Запись клиента на услугу.",
+      "type": "object",
+      "properties": {
+        "clientName": { "type": "string" },
+        "serviceName": { "type": "string" },
+        "barberName": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "completed", "cancelled"] },
+        "totalPrice": { "type": "number" },
+        "aiResultUrl": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["clientName", "serviceName", "barberName", "date", "time", "status"]
+    },
+    "Barber": {
+      "title": "Barber",
+      "description": "Сотрудник барбершопа.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "rating": { "type": "number" },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["name", "role"]
+    }
+  },
+  "auth": {
+    "providers": ["google.com", "password"]
+  },
+  "firestore": {
+    "/bookings/{bookingId}": {
+      "schema": "Booking",
+      "description": "Коллекция всех записей"
+    },
+    "/barbers/{barberId}": {
+      "schema": "Barber",
+      "description": "Коллекция мастеров"
+    }
+  }
+}

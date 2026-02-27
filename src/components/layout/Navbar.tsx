@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -5,9 +6,11 @@ import { Scissors, LayoutDashboard, Sparkles, Calendar, Menu, X } from "lucide-r
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useUser } from "@/firebase";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const { user } = useUser();
 
   const navLinks = [
     { name: "Услуги", href: "/#services", icon: Scissors },
@@ -48,25 +51,21 @@ export function Navbar() {
           </div>
 
           <div className="md:hidden flex items-center">
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="text-muted-foreground hover:text-foreground focus:outline-none"
-            >
+            <button onClick={() => setIsOpen(!isOpen)} className="text-muted-foreground hover:text-foreground">
               {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile Menu */}
-      <div className={cn("md:hidden transition-all duration-300 ease-in-out", isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0 overflow-hidden")}>
-        <div className="px-2 pt-2 pb-3 space-y-1 bg-background border-b border-border shadow-lg">
+      <div className={cn("md:hidden transition-all duration-300", isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0 overflow-hidden")}>
+        <div className="px-2 pt-2 pb-3 space-y-1 bg-background border-b">
           {navLinks.map((link) => (
             <Link
               key={link.name}
               href={link.href}
               onClick={() => setIsOpen(false)}
-              className="block px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:text-accent hover:bg-muted"
+              className="block px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:text-accent"
             >
               <div className="flex items-center gap-3">
                 <link.icon className="w-5 h-5" />
