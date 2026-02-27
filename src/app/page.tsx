@@ -21,6 +21,7 @@ export default function Home() {
   const { data: siteContent } = useDoc(siteContentRef);
 
   const defaultHeroBg = PlaceHolderImages.find(img => img.id === "hero-bg")?.imageUrl;
+  const heroSubjectImg = PlaceHolderImages.find(img => img.id === "hero-barber")?.imageUrl;
   const defaultCta1 = PlaceHolderImages.find(img => img.id === "cta-haircut-1")?.imageUrl;
   const defaultCta2 = PlaceHolderImages.find(img => img.id === "cta-haircut-2")?.imageUrl;
   const defaultCta3 = PlaceHolderImages.find(img => img.id === "cta-haircut-3")?.imageUrl;
@@ -37,16 +38,16 @@ export default function Home() {
       <Navbar />
 
       <main>
-        <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden min-h-[90vh] flex items-center">
+        <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden min-h-[95vh] flex items-center">
           <div className="absolute inset-0 -z-20">
             {heroBg ? (
-               <Image src={heroBg} alt="Background" fill className="object-cover opacity-20 brightness-[0.3]" priority />
+               <Image src={heroBg} alt="Background" fill className="object-cover opacity-20 brightness-[0.2]" priority />
             ) : <div className="absolute inset-0 bg-muted/20" />}
             <div className="absolute inset-0 bg-gradient-to-b from-background via-transparent to-background"></div>
           </div>
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-            <div className="flex flex-col lg:flex-row items-center gap-12 text-center lg:text-left">
+            <div className="flex flex-col lg:flex-row items-center gap-16 text-center lg:text-left">
               <div className="flex-1 z-10">
                 <div className="inline-flex items-center gap-2 bg-primary/20 border border-primary/30 rounded-full px-4 py-1.5 text-primary-foreground text-sm font-semibold mb-6 backdrop-blur-sm">
                   <Sparkles className="w-4 h-4 text-accent" />
@@ -72,11 +73,26 @@ export default function Home() {
                   </Link>
                 </div>
               </div>
+
+              {heroSubjectImg && (
+                <div className="flex-1 relative z-10 hidden lg:block">
+                  <div className="relative aspect-square max-w-md mx-auto rounded-[3rem] overflow-hidden border-8 border-white/5 shadow-2xl transition-transform hover:scale-105 duration-700">
+                    <Image 
+                      src={heroSubjectImg} 
+                      alt="Premium Barber Service" 
+                      fill 
+                      className="object-cover"
+                      priority
+                      data-ai-hint="barber shaving"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </section>
 
-        <section id="services" className="py-24 bg-secondary/50 relative backdrop-blur-sm">
+        <section id="services" className="py-24 bg-secondary/30 relative backdrop-blur-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-5xl font-headline font-bold mb-4">Почему BarBerTok?</h2>
@@ -117,12 +133,12 @@ export default function Home() {
               <div className="flex-1 w-full max-w-md lg:max-w-none relative z-10">
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-6 pt-12">
-                    {cta1 && <div className="rounded-3xl overflow-hidden aspect-square relative border-4 border-white/10 shadow-2xl"><Image src={cta1} fill alt="CTA 1" className="object-cover" /></div>}
-                    {cta2 && <div className="rounded-3xl overflow-hidden aspect-square relative border-4 border-white/10 shadow-2xl"><Image src={cta2} fill alt="CTA 2" className="object-cover" /></div>}
+                    {cta1 && <div className="rounded-3xl overflow-hidden aspect-square relative border-4 border-white/10 shadow-2xl"><Image src={cta1} fill alt="CTA 1" className="object-cover" data-ai-hint="modern haircut" /></div>}
+                    {cta2 && <div className="rounded-3xl overflow-hidden aspect-square relative border-4 border-white/10 shadow-2xl"><Image src={cta2} fill alt="CTA 2" className="object-cover" data-ai-hint="beard grooming" /></div>}
                   </div>
                   <div className="space-y-6">
-                    {cta3 && <div className="rounded-3xl overflow-hidden aspect-square relative border-4 border-white/10 shadow-2xl"><Image src={cta3} fill alt="CTA 3" className="object-cover" /></div>}
-                    {cta4 && <div className="rounded-3xl overflow-hidden aspect-square relative border-4 border-white/10 shadow-2xl"><Image src={cta4} fill alt="CTA 4" className="object-cover" /></div>}
+                    {cta3 && <div className="rounded-3xl overflow-hidden aspect-square relative border-4 border-white/10 shadow-2xl"><Image src={cta3} fill alt="CTA 3" className="object-cover" data-ai-hint="classic fade" /></div>}
+                    {cta4 && <div className="rounded-3xl overflow-hidden aspect-square relative border-4 border-white/10 shadow-2xl"><Image src={cta4} fill alt="CTA 4" className="object-cover" data-ai-hint="barber cutting" /></div>}
                   </div>
                 </div>
               </div>
