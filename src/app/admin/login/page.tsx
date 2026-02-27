@@ -10,12 +10,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { ShieldCheck, Loader2 } from "lucide-react";
+import { ShieldCheck, Loader2, AlertCircle, Copy, Check } from "lucide-react";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [deniedUid, setDeniedUid] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  
   const auth = useAuth();
   const db = useFirestore();
   const { user, loading: authLoading } = useUser();
@@ -27,23 +30,24 @@ export default function AdminLoginPage() {
     try {
       const adminRef = doc(db, "roles_admin", uid);
       const adminSnap = await getDoc(adminRef);
+      
       if (adminSnap.exists()) {
         router.push("/admin");
       } else {
-        // Если пользователь вошел в Auth, но его нет в списке админов Firestore
+        setDeniedUid(uid);
         if (auth) await signOut(auth);
         toast({
           variant: "destructive",
-          title: "Доступ запрещен",
-          description: "Ваш UID отсутствует в коллекции 'roles_admin'. Проверьте настройки базы данных."
+          title: "Доступ ограничен",
+          description: "Ваш аккаунт не найден в списке администраторов."
         });
       }
     } catch (e: any) {
       console.error("Admin check error:", e);
       toast({
         variant: "destructive",
-        title: "Ошибка проверки",
-        description: "Не удалось проверить права администратора."
+        title: "Ошибка базы данных",
+        description: "Не удалось проверить роль. Убедитесь, что Firestore настроен."
       });
     }
   };
@@ -56,11 +60,13 @@ export default function AdminLoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setDeniedUid(null);
+    
     if (!auth || !db) {
       toast({
         variant: "destructive",
-        title: "Сервисы не готовы",
-        description: "Проверьте инициализацию Firebase в src/firebase/config.ts"
+        title: "Ошибка",
+        description: "Сервисы Firebase не инициализированы. Проверьте src/firebase/config.ts"
       });
       return;
     }
@@ -70,19 +76,25 @@ export default function AdminLoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       await checkAdminStatus(userCredential.user.uid);
     } catch (error: any) {
-      let message = "Неверный email или пароль.";
-      if (error.code === 'auth/configuration-not-found' || error.code === 'auth/operation-not-allowed') {
-        message = "Метод Email/Password не включен в Firebase Console.";
-      } else if (error.code === 'auth/user-not-found') {
-        message = "Пользователь не найден.";
-      }
+      let message = "Неверный логин или пароль.";
+      if (error.code === 'auth/configuration-not-found') message = "Email-вход не включен в Firebase Console.";
+      if (error.code === 'auth/invalid-credential') message = "Неверные учетные данные.";
+      
       toast({ 
         variant: "destructive", 
-        title: "Ошибка входа", 
+        title: "Ошибка авторизации", 
         description: message 
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    if (deniedUid) {
+      navigator.clipboard.writeText(deniedUid);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -97,55 +109,78 @@ export default function AdminLoginPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
-      <main className="flex-1 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md shadow-2xl border-border">
-          <CardHeader className="text-center">
-            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 text-primary">
-              <ShieldCheck className="w-6 h-6" />
-            </div>
-            <CardTitle className="text-2xl font-headline">Вход в <span className="text-primary">Панель</span></CardTitle>
-            <CardDescription>Только для авторизованных сотрудников</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Input 
-                  type="email" 
-                  placeholder="Email" 
-                  value={email} 
-                  onChange={(e) => setEmail(e.target.value)} 
-                  required 
-                  disabled={loading}
-                  autoComplete="email"
-                />
+      <main className="flex-1 flex items-center justify-center p-4 pt-20">
+        <div className="w-full max-w-md space-y-4">
+          <Card className="shadow-2xl border-border">
+            <CardHeader className="text-center">
+              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 text-primary">
+                <ShieldCheck className="w-6 h-6" />
               </div>
-              <div className="space-y-2">
-                <Input 
-                  type="password" 
-                  placeholder="Пароль" 
-                  value={password} 
-                  onChange={(e) => setPassword(e.target.value)} 
-                  required 
-                  disabled={loading}
-                  autoComplete="current-password"
-                />
+              <CardTitle className="text-2xl font-headline font-bold">Вход в <span className="text-primary">Панель</span></CardTitle>
+              <CardDescription>Управление записями и контентом</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Input 
+                    type="email" 
+                    placeholder="Email" 
+                    value={email} 
+                    onChange={(e) => setEmail(e.target.value)} 
+                    required 
+                    disabled={loading}
+                    autoComplete="email"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Input 
+                    type="password" 
+                    placeholder="Пароль" 
+                    value={password} 
+                    onChange={(e) => setPassword(e.target.value)} 
+                    required 
+                    disabled={loading}
+                    autoComplete="current-password"
+                  />
+                </div>
+                <Button type="submit" className="w-full h-11 font-bold" disabled={loading}>
+                  {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                  {loading ? "Вход..." : "Войти"}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
+          {deniedUid && (
+            <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 animate-in slide-in-from-bottom-2">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                <div className="space-y-3 flex-1">
+                  <p className="text-sm font-bold text-destructive">UID не найден в roles_admin!</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Вы успешно вошли в аккаунт, но у вас нет прав доступа. 
+                    Создайте документ в коллекции <b>roles_admin</b> с этим ID:
+                  </p>
+                  <div className="flex items-center gap-2 bg-background/50 p-2 rounded border border-border">
+                    <code className="text-[10px] break-all flex-1">{deniedUid}</code>
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={copyToClipboard}>
+                      {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                    </Button>
+                  </div>
+                </div>
               </div>
-              <Button type="submit" className="w-full h-11 font-bold" disabled={loading}>
-                {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                {loading ? "Авторизация..." : "Войти"}
-              </Button>
-            </form>
-            <div className="mt-6 p-4 bg-muted/50 rounded-lg text-[10px] text-muted-foreground leading-relaxed">
-              <p className="font-bold mb-1 uppercase tracking-widest text-primary">Если вход не удается:</p>
-              <ol className="list-decimal list-inside space-y-1">
-                <li>Включите Email/Password в Firebase Console (Authentication).</li>
-                <li>Создайте коллекцию "roles_admin" в Firestore.</li>
-                <li>Добавьте документ, где ID — ваш UID (возьмите из раздела Users).</li>
-                <li>Внутри документа добавьте любое поле, например: role: "admin".</li>
-              </ol>
             </div>
-          </CardContent>
-        </Card>
+          )}
+
+          <div className="p-4 bg-muted/30 rounded-lg text-[10px] text-muted-foreground">
+             <p className="font-bold uppercase tracking-wider mb-2">Инструкция:</p>
+             <ol className="list-decimal list-inside space-y-1">
+               <li>Включите <b>Email/Password</b> в Firebase Console.</li>
+               <li>Создайте в Firestore коллекцию <b>roles_admin</b>.</li>
+               <li>Добавьте в нее документ. ID документа должен быть равен вашему UID.</li>
+             </ol>
+          </div>
+        </div>
       </main>
     </div>
   );

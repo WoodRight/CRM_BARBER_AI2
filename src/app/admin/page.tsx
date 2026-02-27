@@ -44,7 +44,7 @@ export default function AdminDashboard() {
   const [isSeeding, setIsSeeding] = useState(false);
   const [isSavingContent, setIsSavingContent] = useState(false);
 
-  // Состояния для форм добавления
+  // Состояния для форм
   const [newServiceName, setNewServiceName] = useState("");
   const [newServicePrice, setNewServicePrice] = useState("");
   const [newBarberName, setNewBarberName] = useState("");
@@ -94,7 +94,6 @@ export default function AdminDashboard() {
               setIsAdmin(true);
             } else {
               setIsAdmin(false);
-              if (auth) await signOut(auth);
               router.push("/admin/login");
             }
           } catch (e) {
@@ -105,7 +104,7 @@ export default function AdminDashboard() {
       }
     };
     verifyAdmin();
-  }, [user, isUserLoading, db, router, auth]);
+  }, [user, isUserLoading, db, router]);
 
   useEffect(() => {
     if (siteContent) {
@@ -119,8 +118,11 @@ export default function AdminDashboard() {
     }
   }, [siteContent]);
 
-  const handleLogout = () => {
-    if (auth) signOut(auth);
+  const handleLogout = async () => {
+    if (auth) {
+      await signOut(auth);
+      router.push("/admin/login");
+    }
   };
 
   const handleSaveContent = async () => {
@@ -237,17 +239,6 @@ export default function AdminDashboard() {
     );
   }
 
-  if (isAdmin === false) {
-     return (
-       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 text-center">
-         <AlertCircle className="w-16 h-16 text-destructive mb-4" />
-         <h1 className="text-2xl font-bold mb-2">Доступ ограничен</h1>
-         <p className="text-muted-foreground mb-6">У вашей учетной записи ({user?.email}) нет прав доступа к этой панели.</p>
-         <Button onClick={() => router.push("/admin/login")}>Вернуться ко входу</Button>
-       </div>
-     );
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -286,7 +277,6 @@ export default function AdminDashboard() {
               <CardContent>
                 {bookingsLoading ? (
                   <div className="space-y-2">
-                    <Skeleton className="h-12 w-full" />
                     <Skeleton className="h-12 w-full" />
                     <Skeleton className="h-12 w-full" />
                   </div>
@@ -346,7 +336,7 @@ export default function AdminDashboard() {
               <Card className="lg:col-span-2">
                 <CardContent className="pt-6">
                   {servicesLoading ? (
-                    <div className="space-y-2"><Skeleton className="h-20 w-full" /><Skeleton className="h-20 w-full" /></div>
+                    <div className="space-y-2"><Skeleton className="h-20 w-full" /></div>
                   ) : (
                     <Table>
                       <TableHeader>
@@ -412,41 +402,36 @@ export default function AdminDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>Настройка изображений</CardTitle>
-                <CardDescription>Измените ссылки на фотографии на главной странице.</CardDescription>
+                <CardDescription>Ссылки на фото главной страницы.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-8">
                 <div className="space-y-2">
-                  <Label>Фон в начале страницы (Hero Background)</Label>
-                  <div className="flex gap-2">
-                    <Input placeholder="URL изображения" value={heroBgUrl} onChange={e => setHeroBgUrl(e.target.value)} />
-                    <Button variant="ghost" size="icon" asChild>
-                      <a href={heroBgUrl} target="_blank" rel="noopener noreferrer"><ImageIcon className="w-4 h-4" /></a>
-                    </Button>
-                  </div>
+                  <Label>Фон Hero</Label>
+                  <Input placeholder="URL изображения" value={heroBgUrl} onChange={e => setHeroBgUrl(e.target.value)} />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label>ИИ Блок: Фото 1 (Стрижка)</Label>
+                    <Label>Блок ИИ: Фото 1</Label>
                     <Input value={ctaImg1} onChange={e => setCtaImg1(e.target.value)} placeholder="URL фото" />
                   </div>
                   <div className="space-y-2">
-                    <Label>ИИ Блок: Фото 2 (Борода)</Label>
+                    <Label>Блок ИИ: Фото 2</Label>
                     <Input value={ctaImg2} onChange={e => setCtaImg2(e.target.value)} placeholder="URL фото" />
                   </div>
                   <div className="space-y-2">
-                    <Label>ИИ Блок: Фото 3 (Фейд)</Label>
+                    <Label>Блок ИИ: Фото 3</Label>
                     <Input value={ctaImg3} onChange={e => setCtaImg3(e.target.value)} placeholder="URL фото" />
                   </div>
                   <div className="space-y-2">
-                    <Label>ИИ Блок: Фото 4 (Мастер)</Label>
+                    <Label>Блок ИИ: Фото 4</Label>
                     <Input value={ctaImg4} onChange={e => setCtaImg4(e.target.value)} placeholder="URL фото" />
                   </div>
                 </div>
 
                 <Button className="w-full bg-green-600 hover:bg-green-700 h-12 text-white" onClick={handleSaveContent} disabled={isSavingContent}>
                   {isSavingContent ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                  {isSavingContent ? "Сохранение..." : "Сохранить изменения"}
+                  {isSavingContent ? "Сохранение..." : "Сохранить"}
                 </Button>
               </CardContent>
             </Card>
