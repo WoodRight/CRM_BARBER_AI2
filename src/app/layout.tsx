@@ -3,10 +3,10 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'BarBerTok AI | Премиальный барбершоп и ИИ-стилист',
+  title: 'BarBerTok | Премиальный барбершоп и ИИ-стилист',
   description: 'Примерьте новый образ с помощью ИИ и запишитесь к лучшим барберам города. Будущее мужского стиля уже здесь.',
   openGraph: {
-    title: 'BarBerTok AI | Ваш идеальный стиль',
+    title: 'BarBerTok | Ваш идеальный стиль',
     description: 'ИИ-визуализация причесок и онлайн-запись в современный барбершоп.',
     images: ['https://images.unsplash.com/photo-1635273051839-003bf06a8751?q=80&w=1200'],
   },
