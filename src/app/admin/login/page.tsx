@@ -10,9 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { ShieldCheck, Loader2, AlertCircle, Copy, Check, Key, Lock } from "lucide-react";
-import { firebaseConfig } from "@/firebase/config";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ShieldCheck, Loader2, AlertCircle, Copy, Check, Lock } from "lucide-react";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -30,7 +28,6 @@ export default function AdminLoginPage() {
   const checkAdminStatus = async (uid: string) => {
     if (!db) return;
     try {
-      // Пытаемся получить документ из коллекции roles_admin
       const adminRef = doc(db, "roles_admin", uid);
       const adminSnap = await getDoc(adminRef);
       
@@ -38,7 +35,7 @@ export default function AdminLoginPage() {
         router.push("/admin");
       } else {
         setDeniedUid(uid);
-        if (auth) await signOut(auth);
+        // Мы не выходим из системы сразу, чтобы пользователь мог увидеть свой UID
         toast({
           variant: "destructive",
           title: "Доступ ограничен",
@@ -46,8 +43,6 @@ export default function AdminLoginPage() {
         });
       }
     } catch (e: any) {
-      console.error("Permission check error:", e);
-      // Если выпала ошибка (например, 403), показываем UID, чтобы пользователь мог его добавить
       setDeniedUid(uid);
       toast({
         variant: "destructive",
@@ -67,7 +62,10 @@ export default function AdminLoginPage() {
     e.preventDefault();
     setDeniedUid(null);
     
-    if (!auth) return;
+    if (!auth) {
+      toast({ variant: "destructive", title: "Ошибка", description: "Сервис авторизации недоступен." });
+      return;
+    }
     
     setLoading(true);
     try {
@@ -75,9 +73,8 @@ export default function AdminLoginPage() {
     } catch (error: any) {
       let message = "Неверный Email или пароль.";
       if (error.code === 'auth/network-request-failed') {
-        message = "Ошибка сети. Проверьте подключение к интернету.";
+        message = "Ошибка сети. Проверьте подключение к базе данных.";
       }
-      
       toast({ 
         variant: "destructive", 
         title: "Вход не удался", 
@@ -156,7 +153,7 @@ export default function AdminLoginPage() {
                 <div className="space-y-3 flex-1">
                   <p className="text-sm font-bold text-destructive">UID не найден в roles_admin!</p>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Добавьте этот ID в Firestore, чтобы получить доступ:
+                    Вы успешно авторизованы, но у вас нет прав админа. Добавьте этот ID в Firestore:
                   </p>
                   <div className="flex items-center gap-2 bg-background/50 p-2 rounded border border-border">
                     <code className="text-[10px] break-all flex-1">{deniedUid}</code>
