@@ -3,6 +3,8 @@
 /**
  * @fileOverview Этот процесс использует API AILabTools (Hairstyle Editor Pro)
  * для реалистичной примерки причесок на фото пользователя.
+ * 
+ * Интеграция настроена согласно документации AILabTools.
  */
 
 import { ai } from '@/ai/genkit';
@@ -53,46 +55,56 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
     const appId = process.env.AILAB_APP_ID;
 
     if (!appKey) {
-      throw new Error('Ключ API AILabTools не настроен в .env');
+      throw new Error('Ключ API AILabTools (AILAB_APP_KEY) не найден в .env');
     }
 
-    // Очищаем base64 от префикса
-    const base64Image = input.photoDataUri.split(',')[1];
+    // Очищаем base64 от префикса (API требует чистый base64 без "data:image/png;base64,")
+    const base64Image = input.photoDataUri.includes(',') 
+      ? input.photoDataUri.split(',')[1] 
+      : input.photoDataUri;
     
     // Определяем индекс прически (по умолчанию 3 - короткая мужская)
     const styleIndex = STYLE_MAP[input.hairstyleDescription] || 3;
+
+    // AILabTools часто требует данные в формате x-www-form-urlencoded
+    const formData = new URLSearchParams();
+    formData.append('app_id', appId || ""); 
+    formData.append('app_key', appKey);
+    formData.append('image', base64Image);
+    formData.append('task_type', 'hairstyle');
+    formData.append('hair_style', styleIndex.toString());
 
     try {
       const response = await fetch('https://api-us.ailabtools.com/ai/portrait/effects/hairstyle-editor-pro', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: JSON.stringify({
-          app_id: appId || "default_id", // Некоторые API требуют ID, попробуем передать заглушку если нет в .env
-          app_key: appKey,
-          image: base64Image,
-          task_type: 'hairstyle',
-          hair_style: styleIndex
-        }),
+        body: formData.toString(),
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+      }
 
       const result = await response.json();
 
+      // Обработка ошибок самого API AILabTools
       if (result.error_code !== 0) {
-        throw new Error(`Ошибка AILabTools: ${result.error_msg} (Код: ${result.error_code})`);
+        // Код 10001 часто означает неверный app_id или app_key
+        throw new Error(`AILabTools API Error: ${result.error_msg} (Код: ${result.error_code})`);
       }
 
       if (!result.data || !result.data.image) {
-        throw new Error('API не вернуло изображение.');
+        throw new Error('API успешно отработало, но не вернуло изображение.');
       }
 
       return { 
         generatedHairstyleImage: `data:image/png;base64,${result.data.image}` 
       };
     } catch (error: any) {
-      console.error('AILabTools Error:', error);
-      throw new Error(`Ошибка сервиса обработки: ${error.message || 'Неизвестная ошибка'}`);
+      console.error('AILabTools Flow Error:', error);
+      throw new Error(error.message || 'Ошибка при обращении к сервису обработки изображений');
     }
   }
 );
