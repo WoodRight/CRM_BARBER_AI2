@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -113,29 +112,22 @@ export default function BookingPage() {
 
     setAiLoading(true);
     setAiProgress(10);
-    const interval = setInterval(() => setAiProgress(p => p < 90 ? p + 10 : p), 1200);
+    const interval = setInterval(() => setAiProgress(p => p < 90 ? p + 5 : p), 1000);
 
     try {
-      let photoToProcess = photo;
-      if (photo.startsWith('http')) {
-        const response = await fetch(photo);
-        const blob = await response.blob();
-        photoToProcess = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(blob);
-        });
-      }
-
       const result = await aiHairstyleTryOn({
-        photoDataUri: photoToProcess,
+        photoDataUri: photo,
         hairstyleDescription: aiStyle,
       });
       setAiGeneratedImage(result.generatedHairstyleImage);
       setAiProgress(100);
       toast({ title: "Визуализация готова", description: "ИИ создал ваш новый образ!" });
-    } catch (err) {
-      toast({ variant: "destructive", title: "Ошибка ИИ", description: "Не удалось создать образ. Попробуйте еще раз." });
+    } catch (err: any) {
+      toast({ 
+        variant: "destructive", 
+        title: "Ошибка ИИ", 
+        description: err.message || "Не удалось создать образ. Попробуйте еще раз." 
+      });
     } finally {
       setAiLoading(false);
       clearInterval(interval);
@@ -207,14 +199,16 @@ export default function BookingPage() {
                     >
                       <input id="photo-input" type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
                       {photo ? (
-                        <Image src={photo} alt="Source" fill className="object-cover opacity-50" />
+                        <div className="relative w-full h-full">
+                          <Image src={photo} alt="Source" fill className="object-cover" />
+                        </div>
                       ) : (
                         <div className="flex flex-col items-center">
                           <Upload className="w-8 h-8 mb-2 text-muted-foreground" />
                           <p className="text-sm">Нажмите, чтобы загрузить портрет</p>
                         </div>
                       )}
-                      {photo && <div className="absolute inset-0 flex items-center justify-center bg-black/20 text-white font-bold">Изменить фото</div>}
+                      {photo && <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 hover:opacity-100 transition-opacity text-white font-bold">Изменить фото</div>}
                     </div>
                     {!photo && (
                       <Button variant="outline" className="w-full text-xs h-8 border-dashed" onClick={(e) => { e.stopPropagation(); useSamplePhoto(); }}>

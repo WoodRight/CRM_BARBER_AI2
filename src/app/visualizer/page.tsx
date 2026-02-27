@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -77,33 +76,25 @@ export default function VisualizerPage() {
     const timer = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 90) return prev;
-        return prev + 10;
+        return prev + 5;
       });
-    }, 1500);
+    }, 1000);
 
     try {
-      // If it's the placeholder URL, we need to handle it or use a data URI if possible. 
-      // For the demo to work robustly with our server action, we'll fetch the image and convert to base64 if it's external.
-      let photoToProcess = photo;
-      if (photo.startsWith('http')) {
-        const response = await fetch(photo);
-        const blob = await response.blob();
-        photoToProcess = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(blob);
-        });
-      }
-
+      // Передаем URL или DataURI напрямую в серверный поток
       const result = await aiHairstyleTryOn({
-        photoDataUri: photoToProcess,
+        photoDataUri: photo,
         hairstyleDescription: styleDescription,
       });
       setGeneratedImage(result.generatedHairstyleImage);
       setProgress(100);
       toast({ title: "Стиль создан!", description: "ИИ завершил обработку вашего нового образа." });
-    } catch (error) {
-      toast({ variant: "destructive", title: "Ошибка", description: "Что-то пошло не так при применении стиля." });
+    } catch (error: any) {
+      toast({ 
+        variant: "destructive", 
+        title: "Ошибка", 
+        description: error.message || "Что-то пошло не так при применении стиля." 
+      });
     } finally {
       setLoading(false);
       clearInterval(timer);

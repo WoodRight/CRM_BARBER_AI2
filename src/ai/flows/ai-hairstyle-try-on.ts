@@ -1,12 +1,9 @@
 'use server';
 /**
- * @fileOverview Этот процесс позволяет клиентам загружать свои фотографии и генерировать изображения
- *   себя с различными предлагаемыми прическами с помощью ИИ, чтобы они могли визуально
- *   увидеть, как разные стрижки будут смотреться на них.
+ * @fileOverview Этот процесс позволяет клиентам загружать свои фотографии или ссылки на фото
+ *   и генерировать изображения себя с различными прическами с помощью ИИ.
  *
  * - aiHairstyleTryOn - Функция, обрабатывающая процесс ИИ-визуализации прически.
- * - AiHairstyleTryOnInput - Тип входных данных для функции aiHairstyleTryOn.
- * - AiHairstyleTryOnOutput - Тип возвращаемых данных для функции aiHairstyleTryOn.
  */
 
 import { ai } from '@/ai/genkit';
@@ -16,12 +13,12 @@ const AiHairstyleTryOnInputSchema = z.object({
   photoDataUri: z
     .string()
     .describe(
-      "Фотография клиента в виде data URI, которая должна включать MIME-тип и использовать кодировку Base64. Ожидаемый формат: 'data:<mimetype>;base64,<encoded_data>'."
+      "Фотография клиента в виде data URI или URL-ссылки. Если это data URI, он должен включать MIME-тип и Base64."
     ),
   hairstyleDescription: z
     .string()
     .describe(
-      'Описание желаемой прически, например, "короткий бокс", "длинные кудрявые волосы", "классический помпадур", "гладкий боб".'
+      'Описание желаемой прически, например, "короткий бокс", "длинные кудрявые волосы".'
     ),
 });
 export type AiHairstyleTryOnInput = z.infer<typeof AiHairstyleTryOnInputSchema>;
@@ -29,8 +26,7 @@ export type AiHairstyleTryOnInput = z.infer<typeof AiHairstyleTryOnInputSchema>;
 const AiHairstyleTryOnOutputSchema = z.object({
   generatedHairstyleImage: z
     .string()
-    .describe('Data URI сгенерированного изображения, показывающего клиента с новой прической.')
-    .refine((val) => val.startsWith('data:image/'), 'Должен быть data URI для изображения. Ожидаемый формат: data:image/<mime_type>;base64,<encoded_data>'),
+    .describe('Data URI сгенерированного изображения с новой прической.'),
 });
 export type AiHairstyleTryOnOutput = z.infer<typeof AiHairstyleTryOnOutputSchema>;
 
@@ -47,49 +43,55 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
     outputSchema: AiHairstyleTryOnOutputSchema,
   },
   async (input) => {
-    const { media } = await ai.generate({
-      model: 'googleai/gemini-2.5-flash-image',
-      prompt: [
-        { media: { url: input.photoDataUri } },
-        {
-          text:
-            `Please modify the hair of the person in this photo. Apply the following hairstyle: ${input.hairstyleDescription}. ` +
-            `The new hairstyle must look natural, blending perfectly with the person's head shape, facial features, and skin tone. ` +
-            `Keep the background, lighting, and overall image quality exactly as they are in the original photo. ` +
-            `Return ONLY the modified image.`,
-        },
-      ],
-      config: {
-        responseModalities: ['TEXT', 'IMAGE'],
-        safetySettings: [
-          {
-            category: 'HARM_CATEGORY_HATE_SPEECH',
-            threshold: 'BLOCK_NONE',
-          },
-          {
-            category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-            threshold: 'BLOCK_NONE',
-          },
-          {
-            category: 'HARM_CATEGORY_HARASSMENT',
-            threshold: 'BLOCK_NONE',
-          },
-          {
-            category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-            threshold: 'BLOCK_NONE',
-          },
-          {
-            category: 'HARM_CATEGORY_CIVIC_INTEGRITY',
-            threshold: 'BLOCK_NONE',
-          },
-        ],
-      },
-    });
+    let finalPhotoUri = input.photoDataUri;
 
-    if (!media || !media.url) {
-      throw new Error('Не удалось сгенерировать изображение прически. Попробуйте другое фото или описание.');
+    // Если это URL, скачиваем его на сервере, чтобы избежать CORS
+    if (finalPhotoUri.startsWith('http')) {
+      try {
+        const response = await fetch(finalPhotoUri);
+        if (!response.ok) throw new Error('Failed to fetch image from URL');
+        const arrayBuffer = await response.arrayBuffer();
+        const contentType = response.headers.get('content-type') || 'image/jpeg';
+        const base64 = Buffer.from(arrayBuffer).toString('base64');
+        finalPhotoUri = `data:${contentType};base64,${base64}`;
+      } catch (error) {
+        console.error('Error fetching image on server:', error);
+        throw new Error('Не удалось загрузить изображение по ссылке. Попробуйте загрузить файл напрямую.');
+      }
     }
 
-    return { generatedHairstyleImage: media.url };
+    try {
+      const { media } = await ai.generate({
+        model: 'googleai/gemini-2.5-flash-image',
+        prompt: [
+          { media: { url: finalPhotoUri } },
+          {
+            text:
+              `Modify the hair of the person in this image. Apply the following style: ${input.hairstyleDescription}. ` +
+              `Maintain the person's identity, face, and background exactly as they are. ` +
+              `Only change the hair. The result should look professional and realistic.`,
+          },
+        ],
+        config: {
+          responseModalities: ['TEXT', 'IMAGE'],
+          safetySettings: [
+            { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_CIVIC_INTEGRITY', threshold: 'BLOCK_NONE' },
+          ],
+        },
+      });
+
+      if (!media || !media.url) {
+        throw new Error('Model did not return an image');
+      }
+
+      return { generatedHairstyleImage: media.url };
+    } catch (error: any) {
+      console.error('Genkit error:', error);
+      throw new Error(error.message || 'Ошибка при генерации прически. Попробуйте другое описание.');
+    }
   }
 );
