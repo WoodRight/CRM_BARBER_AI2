@@ -62,7 +62,7 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
 
     try {
       const { media } = await ai.generate({
-        model: 'googleai/gemini-2.5-flash-image',
+        model: 'googleai/gemini-1.5-flash',
         prompt: [
           { media: { url: finalPhotoUri } },
           {
@@ -93,8 +93,8 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
       console.error('Genkit error:', error);
       
       // Обработка лимитов API
-      if (error.message?.includes('RESOURCE_EXHAUSTED') || error.status === 429) {
-        throw new Error('Лимит запросов ИИ исчерпан. Пожалуйста, подождите 1-2 минуты и попробуйте снова.');
+      if (error.message?.includes('429') || error.message?.includes('RESOURCE_EXHAUSTED')) {
+        throw new Error('Лимит запросов ИИ исчерпан. Пожалуйста, подождите 1 минуту и попробуйте снова. Для снятия лимитов нужно включить биллинг в Google AI Studio.');
       }
       
       throw new Error(error.message || 'Ошибка при генерации прически. Попробуйте другое описание.');
