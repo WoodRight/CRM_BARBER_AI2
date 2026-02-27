@@ -14,7 +14,7 @@ import {
   RefreshCw,
   Upload,
   User,
-  Image as ImageIcon,
+  ImageIcon,
   Clock
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -30,8 +30,14 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 const SERVICES = [
   { id: 1, name: "Фирменная стрижка", price: 2500, duration: "45 мин" },
-  { id: 2, name: "Борода", price: 1500, duration: "30 мин" },
-  { id: 3, name: "Полный комплекс", price: 3500, duration: "75 мин" },
+  { id: 2, name: "Стрижка и моделирование бороды", price: 3500, duration: "75 мин" },
+  { id: 3, name: "Моделирование бороды", price: 1500, duration: "30 мин" },
+  { id: 4, name: "Королевское бритье", price: 2000, duration: "45 мин" },
+  { id: 5, name: "Камуфляж седины (волосы + борода)", price: 1800, duration: "40 мин" },
+  { id: 6, name: "Детская стрижка (5-12 лет)", price: 1800, duration: "40 мин" },
+  { id: 7, name: "Удаление волос воском (одна зона)", price: 500, duration: "15 мин" },
+  { id: 8, name: "Очищающая маска для лица", price: 800, duration: "20 мин" },
+  { id: 9, name: "Отец + Сын (Комбо)", price: 3800, duration: "90 мин" },
 ];
 
 const BARBERS = [
@@ -115,7 +121,13 @@ export default function BookingPage() {
                   onClick={() => setSelectedService(s)}
                 >
                   <CardContent className="p-6 flex justify-between items-center">
-                    <div><h3 className="font-bold text-lg">{s.name}</h3><p className="text-primary font-bold">{s.price} ₽</p></div>
+                    <div>
+                      <h3 className="font-bold text-lg">{s.name}</h3>
+                      <div className="flex gap-4 items-center mt-1">
+                        <p className="text-primary font-bold">{s.price} ₽</p>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3" /> {s.duration}</p>
+                      </div>
+                    </div>
                     {selectedService?.id === s.id && <CheckCircle2 className="text-primary" />}
                   </CardContent>
                 </Card>

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -81,7 +80,9 @@ export default function AdminDashboard() {
       await addDoc(collection(db, "services"), {
         name: newServiceName,
         price: Number(newServicePrice),
-        createdAt: serverTimestamp()
+        durationMinutes: 45, // Значение по умолчанию
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       });
       setNewServiceName("");
       setNewServicePrice("");
@@ -96,9 +97,13 @@ export default function AdminDashboard() {
     try {
       await addDoc(collection(db, "barbers"), {
         name: newBarberName,
+        firstName: newBarberName.split(' ')[0],
+        lastName: newBarberName.split(' ')[1] || "",
+        email: `${newBarberName.toLowerCase().replace(' ', '.')}@barbertok.ru`,
         role: "Мастер",
         rating: 5.0,
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       });
       setNewBarberName("");
       toast({ title: "Мастер добавлен" });
@@ -121,13 +126,46 @@ export default function AdminDashboard() {
     if (!db) return;
     setIsSeeding(true);
     try {
-      // Пример услуг
-      const s1 = await addDoc(collection(db, "services"), { name: "Фирменная стрижка", price: 2500, createdAt: serverTimestamp() });
-      const s2 = await addDoc(collection(db, "services"), { name: "Уход за бородой", price: 1500, createdAt: serverTimestamp() });
+      // Пример расширенного списка услуг
+      const demoServices = [
+        { name: "Фирменная стрижка", price: 2500, durationMinutes: 45 },
+        { name: "Стрижка и борода", price: 3500, durationMinutes: 75 },
+        { name: "Моделирование бороды", price: 1500, durationMinutes: 30 },
+        { name: "Королевское бритье", price: 2000, durationMinutes: 45 },
+        { name: "Камуфляж седины", price: 1800, durationMinutes: 40 },
+        { name: "Детская стрижка", price: 1800, durationMinutes: 40 },
+        { name: "Отец + Сын (Комбо)", price: 3800, durationMinutes: 90 }
+      ];
+
+      for (const s of demoServices) {
+        await addDoc(collection(db, "services"), {
+          ...s,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+      }
       
       // Пример мастеров
-      const b1 = await addDoc(collection(db, "barbers"), { name: "Алекс Риверс", role: "Топ-барбер", rating: 4.9, createdAt: serverTimestamp() });
-      const b2 = await addDoc(collection(db, "barbers"), { name: "Иван Грозный", role: "Стилист", rating: 4.8, createdAt: serverTimestamp() });
+      const b1 = await addDoc(collection(db, "barbers"), { 
+        name: "Алекс Риверс", 
+        firstName: "Алекс",
+        lastName: "Риверс",
+        email: "alex@barbertok.ru",
+        role: "Топ-барбер", 
+        rating: 4.9, 
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      const b2 = await addDoc(collection(db, "barbers"), { 
+        name: "Сара Чен", 
+        firstName: "Сара",
+        lastName: "Чен",
+        email: "sarah@barbertok.ru",
+        role: "Старший стилист", 
+        rating: 4.8, 
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
 
       // Пример записей
       await addDoc(collection(db, "bookings"), {
@@ -143,12 +181,12 @@ export default function AdminDashboard() {
 
       await addDoc(collection(db, "bookings"), {
         clientName: "Максим Сидоров",
-        serviceName: "Уход за бородой",
-        barberName: "Иван Грозный",
+        serviceName: "Стрижка и борода",
+        barberName: "Сара Чен",
         date: "2024-05-21",
         time: "10:00",
         status: "confirmed",
-        totalPrice: 1500,
+        totalPrice: 3500,
         createdAt: serverTimestamp()
       });
 
