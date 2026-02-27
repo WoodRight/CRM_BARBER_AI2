@@ -53,13 +53,19 @@ export default function Home() {
                   <div className="absolute inset-0 bg-accent rounded-[3rem] rotate-6 opacity-20 -z-10"></div>
                   <div className="absolute inset-0 bg-primary rounded-[3rem] -rotate-3 opacity-20 -z-10"></div>
                   <div className="rounded-[2.5rem] overflow-hidden border-4 border-card shadow-2xl relative w-full h-full">
-                    <Image
-                      src={heroImg?.imageUrl || ""}
-                      alt={heroImg?.description || ""}
-                      fill
-                      className="object-cover"
-                      data-ai-hint={heroImg?.imageHint}
-                    />
+                    {heroImg?.imageUrl ? (
+                      <Image
+                        src={heroImg.imageUrl}
+                        alt={heroImg.description || "Barber shop"}
+                        fill
+                        className="object-cover"
+                        data-ai-hint={heroImg.imageHint}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-muted flex items-center justify-center">
+                        <Scissors className="w-12 h-12 text-muted-foreground" />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -134,18 +140,26 @@ export default function Home() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-4 pt-8">
                     <div className="rounded-2xl overflow-hidden aspect-square relative border-2 border-white/20">
-                      <Image src={cta1?.imageUrl || ""} fill alt={cta1?.description || ""} className="object-cover" data-ai-hint={cta1?.imageHint} />
+                      {cta1?.imageUrl && (
+                        <Image src={cta1.imageUrl} fill alt={cta1.description} className="object-cover" data-ai-hint={cta1.imageHint} />
+                      )}
                     </div>
                     <div className="rounded-2xl overflow-hidden aspect-square relative border-2 border-white/20">
-                      <Image src={cta2?.imageUrl || ""} fill alt={cta2?.description || ""} className="object-cover" data-ai-hint={cta2?.imageHint} />
+                      {cta2?.imageUrl && (
+                        <Image src={cta2.imageUrl} fill alt={cta2.description} className="object-cover" data-ai-hint={cta2.imageHint} />
+                      )}
                     </div>
                   </div>
                   <div className="space-y-4">
                     <div className="rounded-2xl overflow-hidden aspect-square relative border-2 border-white/20">
-                      <Image src={cta3?.imageUrl || ""} fill alt={cta3?.description || ""} className="object-cover" data-ai-hint={cta3?.imageHint} />
+                      {cta3?.imageUrl && (
+                        <Image src={cta3.imageUrl} fill alt={cta3.description} className="object-cover" data-ai-hint={cta3.imageHint} />
+                      )}
                     </div>
                     <div className="rounded-2xl overflow-hidden aspect-square relative border-2 border-white/20">
-                      <Image src={cta4?.imageUrl || ""} fill alt={cta4?.description || ""} className="object-cover" data-ai-hint={cta4?.imageHint} />
+                      {cta4?.imageUrl && (
+                        <Image src={cta4.imageUrl} fill alt={cta4.description} className="object-cover" data-ai-hint={cta4.imageHint} />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -165,7 +179,7 @@ export default function Home() {
                   </div>
                   <span className="text-xl font-headline font-bold">BarBerTok</span>
                 </div>
-                <p className="text-muted-foreground max-w-sm leading-relaxed mb-6">
+                <p className="text-muted-foreground max-sm leading-relaxed mb-6">
                   Переосмысление современного ухода. Сочетание ремесленного искусства барберинга с искусственным интеллектом, чтобы вы выглядели на все сто.
                 </p>
               </div>
