@@ -2,11 +2,6 @@
 /**
  * @fileOverview Этот процесс использует API AILabTools (AILabAPI)
  * для асинхронной примерки причесок.
- * 
- * Логика в точном соответствии с документацией:
- * 1. POST на /hairstyle-editor-pro с task_type=async.
- * 2. Получение task_id.
- * 3. Циклический опрос /query-async-task-result каждые 5 секунд.
  */
 
 import { ai } from '@/ai/genkit';
@@ -23,9 +18,6 @@ const AiHairstyleTryOnOutputSchema = z.object({
 });
 export type AiHairstyleTryOnOutput = z.infer<typeof AiHairstyleTryOnOutputSchema>;
 
-/**
- * Карта соответствия названий причесок строковым идентификаторам AILabTools.
- */
 const STYLE_MAP: Record<string, string> = {
   "Бокс": "BuzzCut",
   "Фейд": "LowFade",
@@ -54,14 +46,12 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
     outputSchema: AiHairstyleTryOnOutputSchema,
   },
   async (input) => {
-    // Используем переменную окружения для безопасности на публичном сайте
+    // ВАЖНО: При публикации на GitHub убедитесь, что ключ задан в Environment Variables
     const apiKey = process.env.AILAB_API_KEY || "VjEL6M5wqiYtQZnJUeTRoK3LBuzpxIw3zWrAhtHGOaW0xDrlfdn9DAyFCFMGhj1N";
 
-    // 1. Подготовка бинарных данных изображения
     const parts = input.photoDataUri.split(',');
-    if (parts.length < 2) {
-      throw new Error('Некорректный формат изображения.');
-    }
+    if (parts.length < 2) throw new Error('Некорректный формат изображения.');
+    
     const base64Data = parts[1];
     const mimeMatch = parts[0].match(/:(.*?);/);
     const contentType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
@@ -78,73 +68,49 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
     formData.append('hair_style', styleId);
 
     try {
-      console.log(`AILab: Отправка задачи... (Стиль: ${styleId})`);
-      
       const createResponse = await fetch('https://www.ailabapi.com/api/portrait/effects/hairstyle-editor-pro', {
         method: 'POST',
-        headers: {
-          'ailabapi-api-key': apiKey,
-        },
+        headers: { 'ailabapi-api-key': apiKey },
         body: formData,
       });
 
       const createResult = await createResponse.json();
 
       if (!createResponse.ok || createResult.error_code !== 0) {
-        throw new Error(`Ошибка API (${createResult.error_code}): ${createResult.error_msg || 'Не удалось создать задачу'}`);
+        throw new Error(`Ошибка API (${createResult.error_code}): ${createResult.error_msg}`);
       }
 
-      // task_id может быть в корне или в data
       const taskId = createResult.task_id || createResult.data?.task_id;
-      
-      if (!taskId) {
-        throw new Error('Сервер не вернул task_id. Попробуйте другое фото.');
-      }
-
-      console.log('AILab: Задача создана. ID:', taskId);
+      if (!taskId) throw new Error('Сервер не вернул task_id.');
 
       let resultImage = null;
       let attempts = 0;
-      const maxAttempts = 24; // 2 минуты
-
-      const queryUrl = "https://www.ailabapi.com/api/common/query-async-task-result";
+      const maxAttempts = 24; // 2 минуты ожидания
 
       while (attempts < maxAttempts) {
         attempts++;
         await new Promise(resolve => setTimeout(resolve, 5000));
         
-        const pollResponse = await fetch(`${queryUrl}?task_id=${taskId}`, {
+        const pollResponse = await fetch(`https://www.ailabapi.com/api/common/query-async-task-result?task_id=${taskId}`, {
           method: 'GET',
-          headers: {
-            'ailabapi-api-key': apiKey,
-          },
+          headers: { 'ailabapi-api-key': apiKey },
         });
 
         const pollResult = await pollResponse.json();
+        if (pollResult.error_code !== 0) throw new Error(`Ошибка статуса: ${pollResult.error_msg}`);
 
-        if (pollResult.error_code !== 0) {
-          throw new Error(`Ошибка статуса: ${pollResult.error_msg}`);
-        }
-
-        const taskStatus = pollResult.task_status;
-
-        if (taskStatus === 2) {
-          const images = pollResult.data?.images;
-          resultImage = images?.[0];
+        if (pollResult.task_status === 2) {
+          resultImage = pollResult.data?.images?.[0];
           if (resultImage) break;
-        } else if (taskStatus === 3) {
+        } else if (pollResult.task_status === 3) {
           throw new Error('Ошибка обработки на сервере.');
         }
       }
 
-      if (!resultImage) {
-        throw new Error('Время ожидания истекло.');
-      }
-
+      if (!resultImage) throw new Error('Время ожидания истекло.');
       return { generatedHairstyleImage: resultImage };
 
     } catch (error: any) {
-      console.error('AILabTools Error:', error);
       throw new Error(error.message || 'Ошибка связи с сервером ИИ.');
     }
   }
