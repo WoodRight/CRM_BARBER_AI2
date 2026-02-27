@@ -15,7 +15,8 @@ import {
   RefreshCw,
   Upload,
   User,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Clock
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -39,7 +40,13 @@ const BARBERS = [
   { id: 2, name: "Сара Чен", role: "Старший стилист", img: "https://picsum.photos/seed/sarah/100/100" },
 ];
 
-const TIME_SLOTS = ["09:00", "10:00", "11:00", "13:00", "14:00", "15:00"];
+// Расширенное расписание
+const TIME_SLOTS = [
+  "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+  "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
+  "15:00", "15:30", "16:00", "16:30", "17:00", "17:30",
+  "18:00", "18:30", "19:00", "19:30", "20:00"
+];
 
 const HAIRSTYLES = [
   "Бокс", "Фейд", "Классический Помпадур", "Текстурированный Квифф", 
@@ -66,6 +73,7 @@ export default function BookingPage() {
   const handleNextStep = () => {
     if (step === 1 && !selectedService) return toast({ variant: "destructive", title: "Выберите услугу" });
     if (step === 3 && !selectedBarber) return toast({ variant: "destructive", title: "Выберите мастера" });
+    if (step === 4 && (!date || !selectedTime)) return toast({ variant: "destructive", title: "Выберите дату и время" });
     setStep(prev => prev + 1);
   };
 
@@ -223,12 +231,40 @@ export default function BookingPage() {
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-headline font-bold">Дата и время</h2>
-            <div className="grid md:grid-cols-2 gap-8">
-               <Calendar mode="single" selected={date} onSelect={setDate} locale={ru} className="border rounded-xl bg-card" />
-               <div className="grid grid-cols-2 gap-2 content-start">
-                 {TIME_SLOTS.map(t => (
-                   <Button key={t} variant={selectedTime === t ? "default" : "outline"} onClick={() => setSelectedTime(t)} className="h-12">{t}</Button>
-                 ))}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+               <div className="space-y-4">
+                 <p className="text-sm font-medium text-muted-foreground flex items-center gap-2"><ImageIcon className="w-4 h-4" /> Выберите дату</p>
+                 <div className="border rounded-2xl p-4 bg-card shadow-sm inline-block w-full">
+                    <Calendar 
+                      mode="single" 
+                      selected={date} 
+                      onSelect={(newDate) => setDate(newDate || date)} 
+                      locale={ru}
+                      className="rounded-md" 
+                    />
+                 </div>
+               </div>
+               <div className="space-y-4">
+                 <p className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Clock className="w-4 h-4" /> Доступное время</p>
+                 <ScrollArea className="h-[300px] pr-4">
+                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                     {TIME_SLOTS.map(t => (
+                       <Button 
+                        key={t} 
+                        variant={selectedTime === t ? "default" : "outline"} 
+                        onClick={() => setSelectedTime(t)} 
+                        className={cn("h-10 text-xs font-semibold rounded-lg", selectedTime === t && "ring-2 ring-primary ring-offset-2")}
+                       >
+                         {t}
+                       </Button>
+                     ))}
+                   </div>
+                 </ScrollArea>
+                 {selectedTime && (
+                   <p className="text-xs text-primary font-bold bg-primary/10 p-3 rounded-lg border border-primary/20">
+                     Выбрано: {date && format(date, 'd MMMM', { locale: ru })} в {selectedTime}
+                   </p>
+                 )}
                </div>
             </div>
           </div>
@@ -247,14 +283,14 @@ export default function BookingPage() {
   };
 
   const handleConfirm = async () => {
-    if (!selectedTime || !db) return toast({ variant: "destructive", title: "Выберите время" });
+    if (!selectedTime || !date || !db) return toast({ variant: "destructive", title: "Выберите дату и время" });
     setIsSubmitting(true);
     try {
       await addDoc(collection(db, "bookings"), {
         clientName: "Гость", 
         serviceName: selectedService.name,
         barberName: selectedBarber.name,
-        date: format(date!, "yyyy-MM-dd"),
+        date: format(date, "yyyy-MM-dd"),
         time: selectedTime,
         status: "confirmed",
         totalPrice: selectedService.price,
@@ -273,7 +309,7 @@ export default function BookingPage() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="pt-24 pb-20 px-4 max-w-4xl mx-auto">
+      <main className="pt-24 pb-20 px-4 max-w-5xl mx-auto">
         {step < 5 && (
           <div className="mb-10">
             <Progress value={(step / 4) * 100} className="h-2 mb-4" />
