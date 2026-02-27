@@ -1,35 +1,23 @@
-# BarBerTok — Премиальный Барбершоп с ИИ-стилистом
 
-Современное веб-приложение для барбершопа с виртуальной примеркой причесок и панелью управления.
+# BarBerTok — Инструкция по запуску
 
-## Как подключить ваш проект к Firebase
+## 1. Настройка Firebase
+1. Создайте проект на [console.firebase.google.com](https://console.firebase.google.com/).
+2. Включите **Authentication** (Email/Password).
+3. Создайте **Firestore Database** в тестовом режиме.
+4. Скопируйте конфиг приложения и вставьте его в `src/firebase/config.ts`.
 
-1. **Создайте проект** в [Firebase Console](https://console.firebase.google.com/).
-2. **Включите Authentication**:
-   - Перейдите в раздел Authentication -> Sign-in method.
-   - Нажмите "Add new provider" и выберите **Email/Password**. Включите его.
-3. **Включите Firestore**:
-   - Перейдите в Firestore Database -> Create database.
-   - Выберите местоположение и режим (Test mode подойдет для начала).
-4. **Добавьте Администратора**:
-   - В Authentication -> Users нажмите **Add user**.
-   - Создайте Email и Пароль — это будут данные для входа в `/admin/login`.
-5. **Настройте переменные окружения**:
-   - Создайте файл `.env.local` в корне проекта.
-   - Скопируйте данные из "Project Settings" вашего Firebase и впишите их так (используйте ваш актуальный ID проекта):
-     ```env
-     NEXT_PUBLIC_FIREBASE_API_KEY=ваш_ключ
-     NEXT_PUBLIC_FIREBASE_PROJECT_ID=studio-7836855314-29aec
-     NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=studio-7836855314-29aec.firebaseapp.com
-     NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=studio-7836855314-29aec.firebasestorage.app
-     NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
-     NEXT_PUBLIC_FIREBASE_APP_ID=...
-     AILAB_API_KEY=ваш_ключ_от_ailabtools
-     ```
+## 2. Искусственный интеллект
+Для работы ИИ-примерки:
+1. Зарегистрируйтесь на [AILabTools](https://www.ailabapi.com/).
+2. Создайте файл `.env.local` в корне проекта.
+3. Добавьте строку: `AILAB_API_KEY=ваш_ключ_здесь`.
 
-## Запуск
-1. `npm install`
-2. `npm run dev`
+## 3. Запуск
+1. Установите зависимости: `npm install`.
+2. Запустите проект: `npm run dev`.
+3. Откройте `http://localhost:3000`.
 
----
-Разработано с использованием Firebase Studio.
+## 4. Панель Администратора
+- Страница входа: `/admin/login`.
+- Сначала создайте пользователя в Firebase Auth, затем в Firestore в коллекции `roles_admin` создайте документ с ID этого пользователя, чтобы получить доступ.
