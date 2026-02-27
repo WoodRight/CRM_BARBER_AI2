@@ -82,6 +82,7 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
 
     try {
       // 2. Создание асинхронной задачи
+      console.log('AILab: Creating task for style:', styleId);
       const createResponse = await fetch('https://www.ailabapi.com/api/portrait/effects/hairstyle-editor-pro', {
         method: 'POST',
         headers: {
@@ -104,12 +105,16 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
         throw new Error('Сервер не вернул ID задачи. Попробуйте еще раз с другим фото.');
       }
 
+      console.log('AILab: Task created successfully. ID:', taskId);
+
       // 3. Опрос (Polling) результата
       let resultImage = null;
       let attempts = 0;
       const maxAttempts = 12; // Максимум 1 минута ожидания (12 * 5 сек)
 
       while (attempts < maxAttempts) {
+        console.log(`AILab: Polling attempt ${attempts + 1}/${maxAttempts}...`);
+        
         // Ждем 5 секунд перед следующим опросом
         await new Promise(resolve => setTimeout(resolve, 5000));
         
@@ -125,10 +130,12 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
         // Статус 2 означает успех
         if (pollResult.data && pollResult.data.task_status === 2 && pollResult.data.result_list?.[0]?.image) {
           resultImage = pollResult.data.result_list[0].image;
+          console.log('AILab: Success! Image generated.');
           break;
         } 
         // Статус 3 означает ошибку обработки
         else if (pollResult.data && pollResult.data.task_status === 3) {
+          console.error('AILab: Task processing failed.', pollResult);
           throw new Error(`Ошибка обработки: ${pollResult.error_msg || 'Сервер отклонил фото (возможно, лицо не распознано)'}`);
         }
 
