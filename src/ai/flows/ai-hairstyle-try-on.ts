@@ -45,31 +45,40 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
   async (input) => {
     let finalPhotoUri = input.photoDataUri;
 
-    // Если это URL, скачиваем его на сервере, чтобы избежать CORS
+    // Если это URL, скачиваем его на сервере, чтобы избежать CORS и проблем с загрузкой
     if (finalPhotoUri.startsWith('http')) {
       try {
-        const response = await fetch(finalPhotoUri);
-        if (!response.ok) throw new Error('Failed to fetch image from URL');
+        const response = await fetch(finalPhotoUri, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+        }
+        
         const arrayBuffer = await response.arrayBuffer();
         const contentType = response.headers.get('content-type') || 'image/jpeg';
         const base64 = Buffer.from(arrayBuffer).toString('base64');
         finalPhotoUri = `data:${contentType};base64,${base64}`;
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching image on server:', error);
-        throw new Error('Не удалось загрузить изображение по ссылке. Попробуйте загрузить файл напрямую.');
+        throw new Error(`Не удалось загрузить изображение: ${error.message}. Попробуйте загрузить файл с устройства.`);
       }
     }
 
     try {
       const { media } = await ai.generate({
-        model: 'googleai/gemini-1.5-flash',
+        // Используем специализированную модель для редактирования изображений
+        model: 'googleai/gemini-2.5-flash-image',
         prompt: [
           { media: { url: finalPhotoUri } },
           {
             text:
               `Modify the hair of the person in this image. Apply the following style: ${input.hairstyleDescription}. ` +
-              `Maintain the person's identity, face, and background exactly as they are. ` +
-              `Only change the hair. The result should look professional and realistic.`,
+              `CRITICAL: Maintain the person's exact face, identity, clothing, and background. ` +
+              `ONLY update the hair area to match the description. The output must be a professional realistic photograph.`,
           },
         ],
         config: {
@@ -85,19 +94,19 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
       });
 
       if (!media || !media.url) {
-        throw new Error('Модель не вернула изображение. Попробуйте другой стиль.');
+        throw new Error('Модель не вернула изображение. Попробуйте другое описание прически.');
       }
 
       return { generatedHairstyleImage: media.url };
     } catch (error: any) {
       console.error('Genkit error:', error);
       
-      // Обработка лимитов API
-      if (error.message?.includes('429') || error.message?.includes('RESOURCE_EXHAUSTED')) {
-        throw new Error('Лимит запросов ИИ исчерпан. Пожалуйста, подождите 1 минуту и попробуйте снова. Для снятия лимитов нужно включить биллинг в Google AI Studio.');
+      const errorMessage = error.message || '';
+      if (errorMessage.includes('429') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
+        throw new Error('Лимит запросов ИИ исчерпан. Пожалуйста, подождите 1-2 минуты и попробуйте снова.');
       }
       
-      throw new Error(error.message || 'Ошибка при генерации прически. Попробуйте другое описание.');
+      throw new Error(error.message || 'Ошибка при генерации прически. Попробуйте другое фото или описание.');
     }
   }
 );
