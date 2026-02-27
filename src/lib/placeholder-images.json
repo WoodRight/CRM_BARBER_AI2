@@ -32,8 +32,8 @@
     },
     {
       "id": "sample-man-portrait",
-      "description": "Portrait of a man for AI hairstyle testing (Strict 512x512)",
-      "imageUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=512&h=512&auto=format&fit=crop",
+      "description": "Portrait of a man for AI hairstyle testing (Ultra-Optimized 256x256)",
+      "imageUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=256&h=256&auto=format&fit=crop",
       "imageHint": "man portrait"
     }
   ]
