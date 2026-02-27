@@ -1,8 +1,7 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
-import { useUser, useFirestore, useCollection } from "@/firebase";
+import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { collection, query, orderBy } from "firebase/firestore";
 import { Navbar } from "@/components/layout/Navbar";
@@ -20,7 +19,6 @@ import {
   Settings, 
   Clock,
   DollarSign,
-  Briefcase,
   LogOut
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -28,26 +26,29 @@ import { signOut } from "firebase/auth";
 import { useAuth } from "@/firebase";
 
 export default function AdminDashboard() {
-  const { user, loading: authLoading } = useUser();
+  const { user, isUserLoading } = useUser();
   const auth = useAuth();
   const db = useFirestore();
   const router = useRouter();
 
-  // Получаем реальные данные из Firestore
-  const bookingsQuery = db ? query(collection(db, "bookings"), orderBy("createdAt", "desc")) : null;
-  const { data: bookings, loading: bookingsLoading } = useCollection(bookingsQuery);
+  const bookingsQuery = useMemoFirebase(() => {
+    if (!db) return null;
+    return query(collection(db, "bookings"), orderBy("createdAt", "desc"));
+  }, [db]);
+
+  const { data: bookings, isLoading: bookingsLoading } = useCollection(bookingsQuery);
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (!isUserLoading && !user) {
       router.push("/admin/login");
     }
-  }, [user, authLoading, router]);
+  }, [user, isUserLoading, router]);
 
   const handleLogout = () => {
     if (auth) signOut(auth);
   };
 
-  if (authLoading || !user) {
+  if (isUserLoading || !user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="space-y-4 text-center">
@@ -58,6 +59,8 @@ export default function AdminDashboard() {
     );
   }
 
+  const totalRevenue = bookings?.reduce((acc, curr: any) => acc + (curr.totalPrice || 0), 0) || 0;
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -66,7 +69,7 @@ export default function AdminDashboard() {
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
           <div>
             <h1 className="text-3xl font-headline font-bold">Панель <span className="text-accent">Администратора</span></h1>
-            <p className="text-muted-foreground">Добро пожаловать, {user.displayName || user.email}</p>
+            <p className="text-muted-foreground">Добро пожаловать, {user.email}</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" className="rounded-full border-border" onClick={handleLogout}>
@@ -78,12 +81,11 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           {[
             { label: "Всего записей", value: bookings?.length || 0, icon: Calendar, trend: "+12%", color: "text-accent", bg: "bg-accent/10" },
-            { label: "Выручка (EST)", value: `${(bookings?.length || 0) * 2500} ₽`, icon: DollarSign, trend: "Расчет", color: "text-green-500", bg: "bg-green-500/10" },
-            { label: "Клиентов", value: "32", icon: Users, trend: "+5 сегодня", color: "text-primary", bg: "bg-primary/10" },
+            { label: "Выручка", value: `${totalRevenue} ₽`, icon: DollarSign, trend: "Факт", color: "text-green-500", bg: "bg-green-500/10" },
+            { label: "Клиентов", value: bookings?.length || 0, icon: Users, trend: "Уникальные", color: "text-primary", bg: "bg-primary/10" },
             { label: "Рейтинг", value: "4.9", icon: TrendingUp, trend: "Топ", color: "text-amber-500", bg: "bg-amber-500/10" },
           ].map((stat, i) => (
             <Card key={i} className="border-none shadow-md bg-card">
@@ -107,14 +109,13 @@ export default function AdminDashboard() {
           <TabsList className="bg-muted p-1 rounded-xl">
             <TabsTrigger value="bookings">Записи</TabsTrigger>
             <TabsTrigger value="team">Команда</TabsTrigger>
-            <TabsTrigger value="services">Услуги</TabsTrigger>
           </TabsList>
 
           <TabsContent value="bookings">
             <Card>
               <CardHeader>
                 <CardTitle>История бронирования</CardTitle>
-                <CardDescription>Все активные и завершенные записи из базы данных.</CardDescription>
+                <CardDescription>Все активные записи из базы данных в реальном времени.</CardDescription>
               </CardHeader>
               <CardContent>
                 {bookingsLoading ? (
@@ -142,7 +143,7 @@ export default function AdminDashboard() {
                           <TableCell>{bk.date} в {bk.time}</TableCell>
                           <TableCell>
                             <Badge className={cn(bk.status === 'confirmed' ? 'bg-green-500/20 text-green-500' : 'bg-amber-500/20 text-amber-500')}>
-                              {bk.status}
+                              {bk.status === 'confirmed' ? 'Подтверждено' : bk.status}
                             </Badge>
                           </TableCell>
                           <TableCell className="font-bold">{bk.totalPrice} ₽</TableCell>
@@ -159,15 +160,15 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="team">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
                 { name: "Алекс Риверс", role: "Топ-барбер", rating: 4.9 },
                 { name: "Сара Чен", role: "Старший стилист", rating: 5.0 },
               ].map((barber, i) => (
                 <Card key={i}>
                   <CardContent className="p-6 text-center">
-                    <div className="w-20 h-20 rounded-full bg-muted mx-auto mb-4 overflow-hidden">
-                      <img src={`https://picsum.photos/seed/${barber.name}/100/100`} alt={barber.name} />
+                    <div className="w-20 h-20 rounded-full bg-muted mx-auto mb-4 overflow-hidden relative">
+                      <img src={`https://picsum.photos/seed/${barber.name}/100/100`} alt={barber.name} className="object-cover" />
                     </div>
                     <h3 className="font-bold">{barber.name}</h3>
                     <p className="text-sm text-muted-foreground mb-4">{barber.role}</p>
@@ -175,12 +176,6 @@ export default function AdminDashboard() {
                   </CardContent>
                 </Card>
               ))}
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="services">
-            <div className="text-center py-10 text-muted-foreground border-2 border-dashed rounded-xl">
-               Управление услугами будет доступно в следующем обновлении.
             </div>
           </TabsContent>
         </Tabs>

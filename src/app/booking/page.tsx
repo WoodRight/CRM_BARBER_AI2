@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -9,17 +8,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Progress } from "@/components/ui/progress";
 import { 
-  Scissors, 
-  Clock, 
   CheckCircle2, 
-  ChevronRight, 
-  ChevronLeft, 
-  CalendarIcon,
   Sparkles,
-  Upload,
   RefreshCw,
-  Camera,
-  Image as ImageIcon
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -56,7 +47,6 @@ export default function BookingPage() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [aiGeneratedImage, setAiGeneratedImage] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiProgress, setAiProgress] = useState(0);
   const [aiStyle, setAiStyle] = useState("");
 
   const { toast } = useToast();
@@ -71,7 +61,6 @@ export default function BookingPage() {
   const handleAiVisualize = async () => {
     if (!photo || !aiStyle) return toast({ variant: "destructive", title: "Заполните данные для ИИ" });
     setAiLoading(true);
-    setAiProgress(10);
     try {
       const result = await aiHairstyleTryOn({ photoDataUri: photo, hairstyleDescription: aiStyle });
       setAiGeneratedImage(result.generatedHairstyleImage);
@@ -84,10 +73,14 @@ export default function BookingPage() {
   };
 
   const handleConfirm = async () => {
-    if (!selectedTime || !db) return;
+    if (!selectedTime || !db) {
+       toast({ variant: "destructive", title: "Ошибка", description: "Выберите время" });
+       return;
+    }
     setIsSubmitting(true);
     
     try {
+      // Сохраняем бронирование в Firestore
       await addDoc(collection(db, "bookings"), {
         clientName: "Гость", 
         serviceName: selectedService.name,
@@ -118,11 +111,11 @@ export default function BookingPage() {
               {SERVICES.map((s) => (
                 <Card 
                   key={s.id} 
-                  className={cn("cursor-pointer border-2", selectedService?.id === s.id ? "border-primary bg-primary/5" : "border-border")}
+                  className={cn("cursor-pointer border-2 transition-all", selectedService?.id === s.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/50")}
                   onClick={() => setSelectedService(s)}
                 >
                   <CardContent className="p-6 flex justify-between items-center">
-                    <div><h3 className="font-bold">{s.name}</h3><p className="text-primary">{s.price} ₽</p></div>
+                    <div><h3 className="font-bold text-lg">{s.name}</h3><p className="text-primary font-bold">{s.price} ₽</p></div>
                     {selectedService?.id === s.id && <CheckCircle2 className="text-primary" />}
                   </CardContent>
                 </Card>
@@ -138,11 +131,16 @@ export default function BookingPage() {
                 <Button variant="ghost" onClick={() => setStep(3)}>Пропустить</Button>
              </div>
              <Card>
-               <CardContent className="p-6 space-y-4 text-center">
-                 <Button variant="outline" onClick={() => setPhoto(PlaceHolderImages.find(i=>i.id==="sample-man-portrait")?.imageUrl || null)}>Загрузить пример фото</Button>
+               <CardContent className="p-6 space-y-4">
+                 <div className="flex gap-2">
+                   <Button variant="outline" className="flex-1" onClick={() => setPhoto(PlaceHolderImages.find(i=>i.id==="sample-man-portrait")?.imageUrl || null)}>Загрузить пример фото</Button>
+                 </div>
                  <Input value={aiStyle} onChange={e=>setAiStyle(e.target.value)} placeholder="Описание стиля (например: Фейд)" />
-                 <Button onClick={handleAiVisualize} disabled={aiLoading} className="w-full bg-accent">Создать превью</Button>
-                 {aiGeneratedImage && <div className="relative aspect-square rounded-xl overflow-hidden mt-4"><Image src={aiGeneratedImage} fill alt="Result" className="object-cover" /></div>}
+                 <Button onClick={handleAiVisualize} disabled={aiLoading} className="w-full bg-accent">
+                   {aiLoading ? <RefreshCw className="animate-spin mr-2" /> : <Sparkles className="mr-2" />}
+                   {aiLoading ? "Генерация..." : "Создать превью"}
+                 </Button>
+                 {aiGeneratedImage && <div className="relative aspect-square rounded-xl overflow-hidden mt-4 border border-border"><Image src={aiGeneratedImage} fill alt="Result" className="object-cover" /></div>}
                </CardContent>
              </Card>
           </div>
@@ -151,15 +149,17 @@ export default function BookingPage() {
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-headline font-bold">Выберите мастера</h2>
-            {BARBERS.map((b) => (
-              <Card key={b.id} className={cn("cursor-pointer border-2", selectedBarber?.id === b.id ? "border-primary bg-primary/5" : "border-border")} onClick={() => setSelectedBarber(b)}>
-                <CardContent className="p-4 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full overflow-hidden relative"><Image src={b.img} fill alt={b.name} /></div>
-                  <div className="flex-1 font-bold">{b.name}</div>
-                  {selectedBarber?.id === b.id && <CheckCircle2 className="text-primary" />}
-                </CardContent>
-              </Card>
-            ))}
+            <div className="grid gap-4">
+              {BARBERS.map((b) => (
+                <Card key={b.id} className={cn("cursor-pointer border-2 transition-all", selectedBarber?.id === b.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/50")} onClick={() => setSelectedBarber(b)}>
+                  <CardContent className="p-4 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full overflow-hidden relative"><Image src={b.img} fill alt={b.name} className="object-cover" /></div>
+                    <div className="flex-1 font-bold">{b.name}</div>
+                    {selectedBarber?.id === b.id && <CheckCircle2 className="text-primary" />}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         );
       case 4:
@@ -167,10 +167,10 @@ export default function BookingPage() {
           <div className="space-y-6">
             <h2 className="text-2xl font-headline font-bold">Дата и время</h2>
             <div className="grid md:grid-cols-2 gap-8">
-               <Calendar mode="single" selected={date} onSelect={setDate} locale={ru} className="border rounded-xl" />
-               <div className="grid grid-cols-2 gap-2">
+               <Calendar mode="single" selected={date} onSelect={setDate} locale={ru} className="border rounded-xl bg-card" />
+               <div className="grid grid-cols-2 gap-2 content-start">
                  {TIME_SLOTS.map(t => (
-                   <Button key={t} variant={selectedTime === t ? "default" : "outline"} onClick={() => setSelectedTime(t)}>{t}</Button>
+                   <Button key={t} variant={selectedTime === t ? "default" : "outline"} onClick={() => setSelectedTime(t)} className="h-12">{t}</Button>
                  ))}
                </div>
             </div>
@@ -178,11 +178,11 @@ export default function BookingPage() {
         );
       case 5:
         return (
-          <div className="text-center py-10">
+          <div className="text-center py-10 bg-card rounded-2xl border border-border shadow-xl">
             <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
             <h2 className="text-3xl font-headline font-bold mb-2">Запись готова!</h2>
-            <p className="text-muted-foreground mb-6">Мы ждем вас {date && format(date, 'd MMMM')} в {selectedTime}.</p>
-            <Link href="/"><Button className="rounded-full">На главную</Button></Link>
+            <p className="text-muted-foreground mb-6">Мы ждем вас {date && format(date, 'd MMMM', { locale: ru })} в {selectedTime}.</p>
+            <Link href="/"><Button className="rounded-full px-10 h-12 text-lg">На главную</Button></Link>
           </div>
         );
       default: return null;
@@ -196,16 +196,23 @@ export default function BookingPage() {
         {step < 5 && (
           <div className="mb-10">
             <Progress value={(step / 4) * 100} className="h-2 mb-4" />
-            <div className="flex justify-between text-xs text-muted-foreground uppercase font-bold">
+            <div className="flex justify-between text-[10px] sm:text-xs text-muted-foreground uppercase font-bold tracking-wider">
               <span>Услуга</span><span>ИИ</span><span>Мастер</span><span>Время</span>
             </div>
           </div>
         )}
         {renderStep()}
         {step < 5 && (
-          <div className="mt-10 flex justify-between border-t pt-6">
-            <Button variant="outline" onClick={() => setStep(s => s - 1)} disabled={step === 1}>Назад</Button>
-            {step < 4 ? <Button onClick={handleNextStep}>Далее</Button> : <Button onClick={handleConfirm} disabled={isSubmitting}>{isSubmitting ? "Бронируем..." : "Подтвердить"}</Button>}
+          <div className="mt-10 flex justify-between items-center border-t border-border pt-6">
+            <Button variant="outline" className="rounded-full px-6" onClick={() => setStep(s => s - 1)} disabled={step === 1}>Назад</Button>
+            {step < 4 ? (
+              <Button className="rounded-full px-8 bg-primary hover:bg-primary/90" onClick={handleNextStep}>Далее</Button>
+            ) : (
+              <Button className="rounded-full px-10 bg-green-600 hover:bg-green-700 text-white" onClick={handleConfirm} disabled={isSubmitting || !selectedTime}>
+                {isSubmitting ? <RefreshCw className="animate-spin mr-2" /> : null}
+                {isSubmitting ? "Бронируем..." : "Подтвердить запись"}
+              </Button>
+            )}
           </div>
         )}
       </main>

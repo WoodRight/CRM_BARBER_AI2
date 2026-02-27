@@ -1,160 +1,22 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    /**
-     * StylePro AI Security Rules
-     * 
-     * Philosophy:
-     * This ruleset implements a robust, multi-role authorization model tailored for a barbershop 
-     * ecosystem (Clients, Barbers, and Owners). It prioritizes "Authorization Independence" by 
-     * leveraging path-based ownership and denormalized identity fields (clientId, barberId) 
-     * to ensure fast, secure, and atomic access control without excessive cross-document lookups.
-     * 
-     * Data Structure:
-     * - /users/{userId}: Private client profiles and nested AI visualizations.
-     * - /barbers/{barberId}: Public barber profiles, editable by the barber or owners.
-     * - /services/{serviceId}: Public service catalog managed by owners.
-     * - /appointments/{appointmentId}: Shared booking records involving clients and barbers.
-     * - /barberScheduleBlocks/{blockId}: Public availability settings managed by barbers/owners.
-     * - /roles_owner/{userId}: Administrative bypass for platform owners.
-     * 
-     * Key Security Decisions:
-     * 1. Path-Based Ownership: Documents under /users/{userId} are primarily secured by matching the path ID to the auth UID.
-     * 2. Denormalized Role Checks: Global administrative access is determined by the existence of a document in the /roles_owner collection.
-     * 3. Shared Access: Appointment visibility is granted if the user's UID matches either the 'clientId' or 'barberId' stored on the document.
-     * 4. Prototyping Flexibility: Rules enforce "Who" can write, but do not strictly validate "What" is written beyond critical relational IDs.
-     */
-
-    // --- Helper Functions ---
-
-    /** Checks if the user is authenticated. */
     function isSignedIn() {
       return request.auth != null;
     }
-
-    /** Checks if the user's UID matches the provided ID. */
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    /** 
-     * Validates administrative status via DBAC (Database Access Control).
-     * Checks for the existence of a document in the roles_owner collection.
-     */
-    function isGlobalOwner() {
+    
+    function isOwner() {
       return isSignedIn() && exists(/databases/$(database)/documents/roles_owner/$(request.auth.uid));
     }
 
-    /** Shared access check for appointments where both a client and barber are involved. */
-    function isPartyToAppointment(data) {
-      return isSignedIn() && (data.clientId == request.auth.uid || data.barberId == request.auth.uid || isGlobalOwner());
+    match /bookings/{bookingId} {
+      allow create: if true;
+      allow read, update, delete: if isOwner();
     }
-
-    // --- Collection Rules ---
-
-    /**
-     * @description Access rules for the Owner Role collection.
-     * @path /roles_owner/{ownerId}
-     * @allow (get) Any signed-in user checking their own role status.
-     * @deny (write) Any client-side write; roles are managed via Admin SDK/Console.
-     * @principle Existence-based role management (DBAC).
-     */
-    match /roles_owner/{ownerId} {
-      allow get: if isOwner(ownerId);
-      allow list: if isGlobalOwner();
-      allow create, update, delete: if false; // System-managed only.
-    }
-
-    /**
-     * @description Client profile management.
-     * @path /users/{userId}
-     * @allow (create, get, update) If the authenticated user is the owner of the profile.
-     * @deny (list) Listing all users is restricted to owners to prevent data scraping.
-     * @principle Path-based ownership and relational integrity.
-     */
-    match /users/{userId} {
-      allow get: if isOwner(userId) || isGlobalOwner();
-      allow list: if isGlobalOwner();
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if (isOwner(userId) || isGlobalOwner()) && resource != null && request.resource.data.id == resource.data.id;
-      allow delete: if isGlobalOwner();
-    }
-
-    /**
-     * @description Private AI hairstyle visualizations nested under the user.
-     * @path /users/{userId}/hairstyleVisualizations/{visualizationId}
-     * @allow (all) Owner of the parent user profile has full control.
-     * @deny (all) Access by any other user (except platform owners).
-     * @principle Hierarchical ownership.
-     */
-    match /users/{userId}/hairstyleVisualizations/{visualizationId} {
-      allow get, list: if isOwner(userId) || isGlobalOwner();
-      allow create: if isOwner(userId);
-      allow update: if (isOwner(userId) || isGlobalOwner()) && resource != null;
-      allow delete: if (isOwner(userId) || isGlobalOwner()) && resource != null;
-    }
-
-    /**
-     * @description Public barber profiles.
-     * @path /barbers/{barberId}
-     * @allow (read) Publicly accessible for client browsing.
-     * @allow (update) The specific barber or a platform owner.
-     * @principle Public read with owner-managed updates.
-     */
-    match /barbers/{barberId} {
-      allow get, list: if true;
-      allow create: if isGlobalOwner(); // Only owners can "hire" (create) barbers in the system.
-      allow update: if (isOwner(barberId) || isGlobalOwner()) && resource != null;
-      allow delete: if isGlobalOwner();
-    }
-
-    /**
-     * @description Catalog of services offered by the shop.
-     * @path /services/{serviceId}
-     * @allow (read) Publicly accessible for all visitors.
-     * @deny (write) Non-owner users cannot modify the service catalog.
-     * @principle Public consumption with administrative control.
-     */
-    match /services/{serviceId} {
-      allow get, list: if true;
-      allow create, update, delete: if isGlobalOwner();
-    }
-
-    /**
-     * @description Appointment records.
-     * @path /appointments/{appointmentId}
-     * @allow (get, list) Allowed if the user is the clientId, barberId, or an owner.
-     * @allow (create) Clients can create their own appointments.
-     * @principle Denormalized authorization using internal document fields.
-     */
-    match /appointments/{appointmentId} {
-      allow get: if isPartyToAppointment(resource.data);
-      allow list: if isSignedIn(); // Filtering is enforced by the query (must filter by clientId or barberId).
-      allow create: if isSignedIn() && (request.resource.data.clientId == request.auth.uid || isGlobalOwner());
-      allow update: if isPartyToAppointment(resource.data) && resource != null;
-      allow delete: if isGlobalOwner();
-    }
-
-    /**
-     * @description Barber availability schedules.
-     * @path /barberScheduleBlocks/{scheduleBlockId}
-     * @allow (read) Publicly accessible to show availability.
-     * @allow (write) The specific barber or a platform owner.
-     * @principle Public visibility with delegated management.
-     */
-    match /barberScheduleBlocks/{scheduleBlockId} {
-      allow get, list: if true;
-      allow create: if isSignedIn() && (request.resource.data.barberId == request.auth.uid || isGlobalOwner());
-      allow update: if isSignedIn() && (resource.data.barberId == request.auth.uid || isGlobalOwner()) && resource != null;
-      allow delete: if isSignedIn() && (resource.data.barberId == request.auth.uid || isGlobalOwner()) && resource != null;
-    }
-
-    /**
-     * @description Collection Group access for visualizations (Admin view).
-     */
-    match /{path=**}/hairstyleVisualizations/{visualizationId} {
-      allow read: if isGlobalOwner();
+    
+    match /roles_owner/{userId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow write: if false;
     }
   }
 }
