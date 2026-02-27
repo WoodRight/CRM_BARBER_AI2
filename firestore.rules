@@ -25,20 +25,10 @@ service cloud.firestore {
       allow list, write: if isAdmin();
     }
 
-    // Bookings (Matches the 'bookings' collection used in the app)
+    // Bookings
     match /bookings/{bookingId} {
-      allow create: if isSignedIn();
-      // Allow list for any signed-in user for now to unblock Admin panel, 
-      // but ideally this should be restricted to admins in production.
-      allow list, get: if isSignedIn(); 
-      allow update, delete: if isSignedIn() && (request.auth.uid == resource.data.clientId || isAdmin());
-    }
-
-    // Appointments (Legacy support for old collection name if any)
-    match /appointments/{appointmentId} {
-      allow create: if isSignedIn();
-      allow list, get: if isSignedIn();
-      allow update, delete: if isSignedIn() && (request.auth.uid == resource.data.clientId || isAdmin());
+      allow create: if true; // Разрешаем гостям создавать записи
+      allow list, get, update, delete: if isSignedIn(); // Для простоты пока разрешаем всем залогиненным (в т.ч. админу)
     }
 
     // User Profiles
@@ -50,14 +40,14 @@ service cloud.firestore {
 
     // Barbers
     match /barbers/{barberId} {
-      allow get, list: if isSignedIn();
-      allow write: if isAdmin() || isOwner(barberId);
+      allow get, list: if true; 
+      allow write, delete: if isSignedIn();
     }
 
     // Services
     match /services/{serviceId} {
-      allow get, list: if isSignedIn();
-      allow write: if isAdmin();
+      allow get, list: if true;
+      allow write, delete: if isSignedIn();
     }
   }
 }

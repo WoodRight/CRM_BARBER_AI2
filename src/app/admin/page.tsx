@@ -1,9 +1,10 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
-import { collection, query, orderBy } from "firebase/firestore";
+import { collection, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc } from "firebase/firestore";
 import { Navbar } from "@/components/layout/Navbar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -11,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import { 
   Users, 
   Calendar, 
@@ -19,24 +21,49 @@ import {
   Settings, 
   Clock,
   DollarSign,
-  LogOut
+  LogOut,
+  Plus,
+  Trash2,
+  Database,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOut } from "firebase/auth";
 import { useAuth } from "@/firebase";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdminDashboard() {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
   const db = useFirestore();
   const router = useRouter();
+  const { toast } = useToast();
+  const [isSeeding, setIsSeeding] = useState(false);
 
+  // Состояния для форм добавления
+  const [newServiceName, setNewServiceName] = useState("");
+  const [newServicePrice, setNewServicePrice] = useState("");
+  const [newBarberName, setNewBarberName] = useState("");
+
+  // Запросы к Firestore
   const bookingsQuery = useMemoFirebase(() => {
     if (!db) return null;
     return query(collection(db, "bookings"), orderBy("createdAt", "desc"));
   }, [db]);
 
+  const servicesQuery = useMemoFirebase(() => {
+    if (!db) return null;
+    return query(collection(db, "services"), orderBy("createdAt", "desc"));
+  }, [db]);
+
+  const barbersQuery = useMemoFirebase(() => {
+    if (!db) return null;
+    return query(collection(db, "barbers"), orderBy("createdAt", "desc"));
+  }, [db]);
+
   const { data: bookings, isLoading: bookingsLoading } = useCollection(bookingsQuery);
+  const { data: services, isLoading: servicesLoading } = useCollection(servicesQuery);
+  const { data: barbers, isLoading: barbersLoading } = useCollection(barbersQuery);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -46,6 +73,91 @@ export default function AdminDashboard() {
 
   const handleLogout = () => {
     if (auth) signOut(auth);
+  };
+
+  const handleAddService = async () => {
+    if (!db || !newServiceName || !newServicePrice) return;
+    try {
+      await addDoc(collection(db, "services"), {
+        name: newServiceName,
+        price: Number(newServicePrice),
+        createdAt: serverTimestamp()
+      });
+      setNewServiceName("");
+      setNewServicePrice("");
+      toast({ title: "Услуга добавлена" });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Ошибка", description: e.message });
+    }
+  };
+
+  const handleAddBarber = async () => {
+    if (!db || !newBarberName) return;
+    try {
+      await addDoc(collection(db, "barbers"), {
+        name: newBarberName,
+        role: "Мастер",
+        rating: 5.0,
+        createdAt: serverTimestamp()
+      });
+      setNewBarberName("");
+      toast({ title: "Мастер добавлен" });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Ошибка", description: e.message });
+    }
+  };
+
+  const handleDelete = async (collName: string, id: string) => {
+    if (!db) return;
+    try {
+      await deleteDoc(doc(db, collName, id));
+      toast({ title: "Удалено успешно" });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Ошибка удаления", description: e.message });
+    }
+  };
+
+  const seedDemoData = async () => {
+    if (!db) return;
+    setIsSeeding(true);
+    try {
+      // Пример услуг
+      const s1 = await addDoc(collection(db, "services"), { name: "Фирменная стрижка", price: 2500, createdAt: serverTimestamp() });
+      const s2 = await addDoc(collection(db, "services"), { name: "Уход за бородой", price: 1500, createdAt: serverTimestamp() });
+      
+      // Пример мастеров
+      const b1 = await addDoc(collection(db, "barbers"), { name: "Алекс Риверс", role: "Топ-барбер", rating: 4.9, createdAt: serverTimestamp() });
+      const b2 = await addDoc(collection(db, "barbers"), { name: "Иван Грозный", role: "Стилист", rating: 4.8, createdAt: serverTimestamp() });
+
+      // Пример записей
+      await addDoc(collection(db, "bookings"), {
+        clientName: "Дмитрий Иванов",
+        serviceName: "Фирменная стрижка",
+        barberName: "Алекс Риверс",
+        date: "2024-05-20",
+        time: "14:00",
+        status: "confirmed",
+        totalPrice: 2500,
+        createdAt: serverTimestamp()
+      });
+
+      await addDoc(collection(db, "bookings"), {
+        clientName: "Максим Сидоров",
+        serviceName: "Уход за бородой",
+        barberName: "Иван Грозный",
+        date: "2024-05-21",
+        time: "10:00",
+        status: "confirmed",
+        totalPrice: 1500,
+        createdAt: serverTimestamp()
+      });
+
+      toast({ title: "Демо-данные успешно созданы!" });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Ошибка сидирования", description: e.message });
+    } finally {
+      setIsSeeding(false);
+    }
   };
 
   if (isUserLoading || !user) {
@@ -72,11 +184,12 @@ export default function AdminDashboard() {
             <p className="text-muted-foreground">Добро пожаловать, {user.email}</p>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={seedDemoData} disabled={isSeeding}>
+              {isSeeding ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Database className="w-4 h-4 mr-2" />}
+              Демо-данные
+            </Button>
             <Button variant="outline" className="rounded-full border-border" onClick={handleLogout}>
               <LogOut className="w-4 h-4 mr-2" /> Выйти
-            </Button>
-            <Button className="rounded-full bg-primary">
-              <Settings className="w-4 h-4 mr-2" /> Настройки
             </Button>
           </div>
         </div>
@@ -85,8 +198,8 @@ export default function AdminDashboard() {
           {[
             { label: "Всего записей", value: bookings?.length || 0, icon: Calendar, trend: "+12%", color: "text-accent", bg: "bg-accent/10" },
             { label: "Выручка", value: `${totalRevenue} ₽`, icon: DollarSign, trend: "Факт", color: "text-green-500", bg: "bg-green-500/10" },
-            { label: "Клиентов", value: bookings?.length || 0, icon: Users, trend: "Уникальные", color: "text-primary", bg: "bg-primary/10" },
-            { label: "Рейтинг", value: "4.9", icon: TrendingUp, trend: "Топ", color: "text-amber-500", bg: "bg-amber-500/10" },
+            { label: "Услуг", value: services?.length || 0, icon: Scissors, trend: "Активные", color: "text-primary", bg: "bg-primary/10" },
+            { label: "Мастеров", value: barbers?.length || 0, icon: Users, trend: "В штате", color: "text-amber-500", bg: "bg-amber-500/10" },
           ].map((stat, i) => (
             <Card key={i} className="border-none shadow-md bg-card">
               <CardContent className="p-6">
@@ -108,6 +221,7 @@ export default function AdminDashboard() {
         <Tabs defaultValue="bookings" className="space-y-6">
           <TabsList className="bg-muted p-1 rounded-xl">
             <TabsTrigger value="bookings">Записи</TabsTrigger>
+            <TabsTrigger value="services">Услуги</TabsTrigger>
             <TabsTrigger value="team">Команда</TabsTrigger>
           </TabsList>
 
@@ -115,7 +229,7 @@ export default function AdminDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>История бронирования</CardTitle>
-                <CardDescription>Все активные записи из базы данных в реальном времени.</CardDescription>
+                <CardDescription>Все активные записи в реальном времени.</CardDescription>
               </CardHeader>
               <CardContent>
                 {bookingsLoading ? (
@@ -132,6 +246,7 @@ export default function AdminDashboard() {
                         <TableHead>Дата/Время</TableHead>
                         <TableHead>Статус</TableHead>
                         <TableHead>Сумма</TableHead>
+                        <TableHead></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -147,10 +262,15 @@ export default function AdminDashboard() {
                             </Badge>
                           </TableCell>
                           <TableCell className="font-bold">{bk.totalPrice} ₽</TableCell>
+                          <TableCell>
+                             <Button variant="ghost" size="icon" onClick={() => handleDelete("bookings", bk.id)}>
+                               <Trash2 className="w-4 h-4 text-destructive" />
+                             </Button>
+                          </TableCell>
                         </TableRow>
                       ))}
                       {bookings?.length === 0 && (
-                        <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">Записей пока нет</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={7} className="text-center py-10 text-muted-foreground">Записей пока нет</TableCell></TableRow>
                       )}
                     </TableBody>
                   </Table>
@@ -159,23 +279,75 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="services">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Card className="lg:col-span-1">
+                <CardHeader><CardTitle>Новая услуга</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <Input placeholder="Название услуги" value={newServiceName} onChange={e => setNewServiceName(e.target.value)} />
+                  <Input type="number" placeholder="Цена (₽)" value={newServicePrice} onChange={e => setNewServicePrice(e.target.value)} />
+                  <Button className="w-full" onClick={handleAddService}><Plus className="w-4 h-4 mr-2" /> Добавить</Button>
+                </CardContent>
+              </Card>
+              <Card className="lg:col-span-2">
+                <CardHeader><CardTitle>Список услуг</CardTitle></CardHeader>
+                <CardContent>
+                   <Table>
+                     <TableHeader>
+                        <TableRow>
+                          <TableHead>Название</TableHead>
+                          <TableHead>Цена</TableHead>
+                          <TableHead></TableHead>
+                        </TableRow>
+                     </TableHeader>
+                     <TableBody>
+                        {services?.map((s: any) => (
+                          <TableRow key={s.id}>
+                            <TableCell className="font-medium">{s.name}</TableCell>
+                            <TableCell>{s.price} ₽</TableCell>
+                            <TableCell className="text-right">
+                              <Button variant="ghost" size="icon" onClick={() => handleDelete("services", s.id)}>
+                                <Trash2 className="w-4 h-4 text-destructive" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                     </TableBody>
+                   </Table>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
           <TabsContent value="team">
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[
-                { name: "Алекс Риверс", role: "Топ-барбер", rating: 4.9 },
-                { name: "Сара Чен", role: "Старший стилист", rating: 5.0 },
-              ].map((barber, i) => (
-                <Card key={i}>
-                  <CardContent className="p-6 text-center">
-                    <div className="w-20 h-20 rounded-full bg-muted mx-auto mb-4 overflow-hidden relative">
-                      <img src={`https://picsum.photos/seed/${barber.name}/100/100`} alt={barber.name} className="object-cover" />
-                    </div>
-                    <h3 className="font-bold">{barber.name}</h3>
-                    <p className="text-sm text-muted-foreground mb-4">{barber.role}</p>
-                    <Badge variant="outline">★ {barber.rating}</Badge>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+               <Card className="lg:col-span-1">
+                <CardHeader><CardTitle>Новый мастер</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <Input placeholder="Имя мастера" value={newBarberName} onChange={e => setNewBarberName(e.target.value)} />
+                  <Button className="w-full" onClick={handleAddBarber}><Plus className="w-4 h-4 mr-2" /> Добавить мастера</Button>
+                </CardContent>
+              </Card>
+              <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                {barbers?.map((barber: any) => (
+                  <Card key={barber.id}>
+                    <CardContent className="p-6 flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-muted overflow-hidden">
+                          <img src={`https://picsum.photos/seed/${barber.name}/100/100`} alt={barber.name} className="object-cover h-full w-full" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold">{barber.name}</h3>
+                          <p className="text-xs text-muted-foreground">{barber.role}</p>
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete("barbers", barber.id)}>
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
           </TabsContent>
         </Tabs>
