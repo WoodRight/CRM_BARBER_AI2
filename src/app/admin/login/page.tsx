@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { ShieldCheck, Loader2, AlertCircle, Copy, Check } from "lucide-react";
+import { ShieldCheck, Loader2, AlertCircle, Copy, Check, Key } from "lucide-react";
+import { firebaseConfig } from "@/firebase/config";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -25,6 +26,9 @@ export default function AdminLoginPage() {
   const router = useRouter();
   const { toast } = useToast();
 
+  // Проверка: заполнены ли ключи в config.ts
+  const isConfigPlaceholder = firebaseConfig.apiKey.includes("ВАШ_API_KEY") || firebaseConfig.projectId.includes("ВАШ_PROJECT_ID");
+
   const checkAdminStatus = async (uid: string) => {
     if (!db) return;
     try {
@@ -35,19 +39,19 @@ export default function AdminLoginPage() {
         router.push("/admin");
       } else {
         setDeniedUid(uid);
+        // Если вошли в Auth, но нет прав в БД - выходим из Auth, чтобы не висеть в сессии
         if (auth) await signOut(auth);
         toast({
           variant: "destructive",
-          title: "Доступ ограничен",
-          description: "Ваш аккаунт не найден в списке администраторов."
+          title: "Доступ запрещен",
+          description: "Учетная запись верна, но у вас нет прав администратора."
         });
       }
     } catch (e: any) {
-      console.error("Admin check error:", e);
       toast({
         variant: "destructive",
-        title: "Ошибка базы данных",
-        description: "Не удалось проверить роль. Убедитесь, что Firestore настроен."
+        title: "Ошибка Firestore",
+        description: "Не удалось проверить роль. Проверьте Security Rules в консоли Firebase."
       });
     }
   };
@@ -62,27 +66,36 @@ export default function AdminLoginPage() {
     e.preventDefault();
     setDeniedUid(null);
     
-    if (!auth || !db) {
+    if (isConfigPlaceholder) {
       toast({
         variant: "destructive",
-        title: "Ошибка",
-        description: "Сервисы Firebase не инициализированы. Проверьте src/firebase/config.ts"
+        title: "Конфигурация не найдена",
+        description: "Пожалуйста, вставьте реальные ключи в файл src/firebase/config.ts"
       });
       return;
     }
+
+    if (!auth) return;
     
     setLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      await checkAdminStatus(userCredential.user.uid);
+      // После успешного логина сработает useEffect, который вызовет checkAdminStatus
     } catch (error: any) {
+      console.error("Auth error code:", error.code);
       let message = "Неверный логин или пароль.";
-      if (error.code === 'auth/configuration-not-found') message = "Email-вход не включен в Firebase Console.";
-      if (error.code === 'auth/invalid-credential') message = "Неверные учетные данные.";
+      
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        message = "Неверные учетные данные. Проверьте Email и пароль в Firebase Console.";
+      } else if (error.code === 'auth/too-many-requests') {
+        message = "Слишком много попыток. Попробуйте позже.";
+      } else if (error.code === 'auth/network-request-failed') {
+        message = "Ошибка сети. Проверьте соединение.";
+      }
       
       toast({ 
         variant: "destructive", 
-        title: "Ошибка авторизации", 
+        title: "Ошибка входа", 
         description: message 
       });
     } finally {
@@ -111,25 +124,34 @@ export default function AdminLoginPage() {
       <Navbar />
       <main className="flex-1 flex items-center justify-center p-4 pt-20">
         <div className="w-full max-w-md space-y-4">
+          {isConfigPlaceholder && (
+            <Alert variant="destructive" className="mb-4">
+              <Key className="h-4 w-4" />
+              <AlertTitle>Внимание!</AlertTitle>
+              <AlertDescription>
+                Вы используете пустые ключи в <b>src/firebase/config.ts</b>. Вход невозможен.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <Card className="shadow-2xl border-border">
             <CardHeader className="text-center">
               <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 text-primary">
                 <ShieldCheck className="w-6 h-6" />
               </div>
-              <CardTitle className="text-2xl font-headline font-bold">Вход в <span className="text-primary">Панель</span></CardTitle>
-              <CardDescription>Управление записями и контентом</CardDescription>
+              <CardTitle className="text-2xl font-headline font-bold">Панель <span className="text-primary">Управления</span></CardTitle>
+              <CardDescription>Вход для администраторов BarBerTok</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Input 
                     type="email" 
-                    placeholder="Email" 
+                    placeholder="Email (admin@example.com)" 
                     value={email} 
                     onChange={(e) => setEmail(e.target.value)} 
                     required 
                     disabled={loading}
-                    autoComplete="email"
                   />
                 </div>
                 <div className="space-y-2">
@@ -140,12 +162,11 @@ export default function AdminLoginPage() {
                     onChange={(e) => setPassword(e.target.value)} 
                     required 
                     disabled={loading}
-                    autoComplete="current-password"
                   />
                 </div>
-                <Button type="submit" className="w-full h-11 font-bold" disabled={loading}>
+                <Button type="submit" className="w-full h-11 font-bold" disabled={loading || isConfigPlaceholder}>
                   {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                  {loading ? "Вход..." : "Войти"}
+                  {loading ? "Авторизация..." : "Войти в систему"}
                 </Button>
               </form>
             </CardContent>
@@ -156,10 +177,10 @@ export default function AdminLoginPage() {
               <div className="flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
                 <div className="space-y-3 flex-1">
-                  <p className="text-sm font-bold text-destructive">UID не найден в roles_admin!</p>
+                  <p className="text-sm font-bold text-destructive">UID не авторизован!</p>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Вы успешно вошли в аккаунт, но у вас нет прав доступа. 
-                    Создайте документ в коллекции <b>roles_admin</b> с этим ID:
+                    Вы успешно вошли как пользователь, но вас нет в списке админов. 
+                    Добавьте этот ID в коллекцию <b>roles_admin</b>:
                   </p>
                   <div className="flex items-center gap-2 bg-background/50 p-2 rounded border border-border">
                     <code className="text-[10px] break-all flex-1">{deniedUid}</code>
@@ -173,15 +194,26 @@ export default function AdminLoginPage() {
           )}
 
           <div className="p-4 bg-muted/30 rounded-lg text-[10px] text-muted-foreground">
-             <p className="font-bold uppercase tracking-wider mb-2">Инструкция:</p>
+             <p className="font-bold uppercase tracking-wider mb-2">Напоминание для запуска:</p>
              <ol className="list-decimal list-inside space-y-1">
-               <li>Включите <b>Email/Password</b> в Firebase Console.</li>
-               <li>Создайте в Firestore коллекцию <b>roles_admin</b>.</li>
-               <li>Добавьте в нее документ. ID документа должен быть равен вашему UID.</li>
+               <li>Проверьте <b>src/firebase/config.ts</b></li>
+               <li>Включите <b>Email/Password</b> в консоли Firebase</li>
+               <li>Создайте коллекцию <b>roles_admin</b> в Firestore</li>
              </ol>
           </div>
         </div>
       </main>
     </div>
   );
+}
+
+// Заглушки для Alert, если они не импортированы из UI
+function Alert({ children, variant, className }: any) {
+  return <div className={`p-4 rounded-lg border ${variant === 'destructive' ? 'bg-destructive/10 border-destructive/20 text-destructive' : 'bg-muted'} ${className}`}>{children}</div>
+}
+function AlertTitle({ children }: any) {
+  return <h5 className="font-bold mb-1">{children}</h5>
+}
+function AlertDescription({ children }: any) {
+  return <div className="text-sm opacity-90">{children}</div>
 }
