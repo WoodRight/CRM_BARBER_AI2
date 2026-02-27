@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { ShieldCheck, Loader2, AlertCircle, Copy, Check, Key } from "lucide-react";
+import { ShieldCheck, Loader2, AlertCircle, Copy, Check, Key, Lock } from "lucide-react";
 import { firebaseConfig } from "@/firebase/config";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -27,12 +27,10 @@ export default function AdminLoginPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  // Проверка на базовые плейсхолдеры, но без строгой блокировки, если ключи выглядят реальными
-  const isConfigPlaceholder = firebaseConfig.apiKey.includes("ВАШ_API_KEY") || firebaseConfig.projectId === "";
-
   const checkAdminStatus = async (uid: string) => {
     if (!db) return;
     try {
+      // Пытаемся получить документ из коллекции roles_admin
       const adminRef = doc(db, "roles_admin", uid);
       const adminSnap = await getDoc(adminRef);
       
@@ -40,20 +38,21 @@ export default function AdminLoginPage() {
         router.push("/admin");
       } else {
         setDeniedUid(uid);
-        // Выходим, чтобы не оставлять активную сессию без прав
         if (auth) await signOut(auth);
         toast({
           variant: "destructive",
           title: "Доступ ограничен",
-          description: "Вы вошли в систему, но ваш ID не найден в списке администраторов."
+          description: "Ваш UID не найден в списке администраторов."
         });
       }
     } catch (e: any) {
-      // Ошибку не логируем в консоль, чтобы избежать лишних оверлеев
+      console.error("Permission check error:", e);
+      // Если выпала ошибка (например, 403), показываем UID, чтобы пользователь мог его добавить
+      setDeniedUid(uid);
       toast({
         variant: "destructive",
-        title: "Ошибка доступа",
-        description: "Не удалось проверить права в базе данных. Проверьте подключение."
+        title: "Ошибка проверки прав",
+        description: "Убедитесь, что ваш UID добавлен в коллекцию roles_admin."
       });
     }
   };
@@ -68,29 +67,15 @@ export default function AdminLoginPage() {
     e.preventDefault();
     setDeniedUid(null);
     
-    if (isConfigPlaceholder) {
-      toast({
-        variant: "destructive",
-        title: "Конфигурация",
-        description: "Проверьте файл src/firebase/config.ts на наличие реальных ключей."
-      });
-      return;
-    }
-
     if (!auth) return;
     
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (error: any) {
-      let message = "Ошибка авторизации.";
-      
-      if (error.code === 'auth/invalid-credential') {
-        message = "Неверный Email или пароль. Убедитесь, что пользователь создан в консоли Firebase.";
-      } else if (error.code === 'auth/network-request-failed') {
-        message = "Ошибка сети. Проверьте доступ к серверам Google/Firebase.";
-      } else if (error.code === 'auth/too-many-requests') {
-        message = "Слишком много попыток. Попробуйте позже.";
+      let message = "Неверный Email или пароль.";
+      if (error.code === 'auth/network-request-failed') {
+        message = "Ошибка сети. Проверьте подключение к интернету.";
       }
       
       toast({ 
@@ -124,30 +109,20 @@ export default function AdminLoginPage() {
       <Navbar />
       <main className="flex-1 flex items-center justify-center p-4 pt-20">
         <div className="w-full max-w-md space-y-4">
-          {isConfigPlaceholder && (
-            <Alert variant="destructive" className="mb-4">
-              <Key className="h-4 w-4" />
-              <AlertTitle>Настройка Firebase</AlertTitle>
-              <AlertDescription>
-                Похоже, ключи в <b>config.ts</b> не заполнены. Укажите данные вашего проекта.
-              </AlertDescription>
-            </Alert>
-          )}
-
           <Card className="shadow-2xl border-border">
             <CardHeader className="text-center">
               <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 text-primary">
                 <ShieldCheck className="w-6 h-6" />
               </div>
-              <CardTitle className="text-2xl font-headline font-bold">Панель <span className="text-primary">Управления</span></CardTitle>
-              <CardDescription>Вход для сотрудников BarBerTok</CardDescription>
+              <CardTitle className="text-2xl font-headline font-bold">Вход для <span className="text-primary">Админа</span></CardTitle>
+              <CardDescription>BarBerTok Management System</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Input 
                     type="email" 
-                    placeholder="Email администратора" 
+                    placeholder="Email" 
                     value={email} 
                     onChange={(e) => setEmail(e.target.value)} 
                     required 
@@ -166,9 +141,9 @@ export default function AdminLoginPage() {
                     className="h-11"
                   />
                 </div>
-                <Button type="submit" className="w-full h-11 font-bold text-lg" disabled={loading}>
-                  {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                  {loading ? "Входим..." : "Войти"}
+                <Button type="submit" className="w-full h-11 font-bold" disabled={loading}>
+                  {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Lock className="w-4 h-4 mr-2" />}
+                  {loading ? "Проверка..." : "Войти в панель"}
                 </Button>
               </form>
             </CardContent>
@@ -179,9 +154,9 @@ export default function AdminLoginPage() {
               <div className="flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
                 <div className="space-y-3 flex-1">
-                  <p className="text-sm font-bold text-destructive">UID не в списке админов!</p>
+                  <p className="text-sm font-bold text-destructive">UID не найден в roles_admin!</p>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Добавьте этот идентификатор в коллекцию <b>roles_admin</b> в Firestore:
+                    Добавьте этот ID в Firestore, чтобы получить доступ:
                   </p>
                   <div className="flex items-center gap-2 bg-background/50 p-2 rounded border border-border">
                     <code className="text-[10px] break-all flex-1">{deniedUid}</code>
@@ -193,15 +168,6 @@ export default function AdminLoginPage() {
               </div>
             </div>
           )}
-
-          <div className="p-4 bg-muted/30 rounded-lg text-[11px] text-muted-foreground">
-             <p className="font-bold uppercase tracking-wider mb-2 opacity-70">Чек-лист запуска:</p>
-             <ul className="list-disc list-inside space-y-1">
-               <li>Включите <b>Email/Password</b> в Firebase Console</li>
-               <li>Создайте коллекцию <b>roles_admin</b> в Firestore</li>
-               <li>Добавьте ваш UID как ID документа в эту коллекцию</li>
-             </ul>
-          </div>
         </div>
       </main>
     </div>
