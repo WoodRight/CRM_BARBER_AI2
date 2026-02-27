@@ -1,0 +1,35 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "hero-barber",
+      "description": "Professional barber cutting hair",
+      "imageUrl": "https://picsum.photos/seed/barber1/1200/800",
+      "imageHint": "barber shop"
+    },
+    {
+      "id": "haircut-fade",
+      "description": "Modern fade haircut",
+      "imageUrl": "https://picsum.photos/seed/fade/400/400",
+      "imageHint": "men haircut"
+    },
+    {
+      "id": "barber-profile-1",
+      "description": "Master Barber Alex",
+      "imageUrl": "https://picsum.photos/seed/alex/200/200",
+      "imageHint": "portrait man"
+    },
+    {
+      "id": "barber-profile-2",
+      "description": "Stylist Sarah",
+      "imageUrl": "https://picsum.photos/seed/sarah/200/200",
+      "imageHint": "portrait woman"
+    },
+    {
+      "id": "barbershop-interior",
+      "description": "Modern barbershop interior",
+      "imageUrl": "https://picsum.photos/seed/shop/800/600",
+      "imageHint": "modern barbershop"
+    }
+  ]
+}
