@@ -1,14 +1,14 @@
 'use server';
 /**
  * @fileOverview Этот процесс использует API AILabTools для асинхронной примерки причесок.
- * Включает отправку задачи и опрос статуса (polling) каждые 5 секунд.
+ * Поддерживает как Data URI (загруженные фото), так и обычные URL (примеры).
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
 const AiHairstyleTryOnInputSchema = z.object({
-  photoDataUri: z.string().describe("Фото пользователя в формате Data URI."),
+  photoDataUri: z.string().describe("Фото пользователя (Data URI или URL)."),
   hairstyleDescription: z.string().describe('Название или описание прически.'),
 });
 export type AiHairstyleTryOnInput = z.infer<typeof AiHairstyleTryOnInputSchema>;
@@ -48,14 +48,25 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
   },
   async (input) => {
     const apiKey = process.env.AILAB_API_KEY || "VjEL6M5wqiYtQZnJUeTRoK3LBuzpxIw3zWrAhtHGOaW0xDrlfdn9DAyFCFMGhj1N";
+    
+    let blob: Blob;
 
-    // Конвертация Data URI в Blob
-    const parts = input.photoDataUri.split(',');
-    const base64Data = parts[1];
-    const mimeMatch = parts[0].match(/:(.*?);/);
-    const contentType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
-    const buffer = Buffer.from(base64Data, 'base64');
-    const blob = new Blob([buffer], { type: contentType });
+    if (input.photoDataUri.startsWith('data:')) {
+      // Обработка Data URI (загруженное фото)
+      const parts = input.photoDataUri.split(',');
+      if (parts.length < 2) throw new Error("Некорректный формат Data URI");
+      
+      const base64Data = parts[1];
+      const mimeMatch = parts[0].match(/:(.*?);/);
+      const contentType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+      const buffer = Buffer.from(base64Data, 'base64');
+      blob = new Blob([buffer], { type: contentType });
+    } else {
+      // Обработка URL (пример фото)
+      const response = await fetch(input.photoDataUri);
+      if (!response.ok) throw new Error("Не удалось загрузить изображение по ссылке");
+      blob = await response.blob();
+    }
 
     const styleId = STYLE_MAP[input.hairstyleDescription] || input.hairstyleDescription;
 
@@ -101,7 +112,6 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
         throw new Error(`Ошибка статуса: ${pollResult.error_msg}`);
       }
 
-      // task_status: 0-очередь, 1-обработка, 2-успех
       if (pollResult.task_status === 2) {
         resultImage = pollResult.data?.images?.[0];
         if (resultImage) break;
