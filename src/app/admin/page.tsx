@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
 import { useRouter } from "next/navigation";
-import { collection, query, orderBy, limit, addDoc, serverTimestamp, deleteDoc, doc, setDoc } from "firebase/firestore";
+import { collection, query, orderBy, limit, addDoc, serverTimestamp, deleteDoc, doc, setDoc, getDoc } from "firebase/firestore";
 import { Navbar } from "@/components/layout/Navbar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -25,7 +25,8 @@ import {
   Database,
   Loader2,
   Image as ImageIcon,
-  Save
+  Save,
+  AlertCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOut } from "firebase/auth";
@@ -38,6 +39,8 @@ export default function AdminDashboard() {
   const db = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
+  
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [isSeeding, setIsSeeding] = useState(false);
   const [isSavingContent, setIsSavingContent] = useState(false);
 
@@ -53,26 +56,26 @@ export default function AdminDashboard() {
   const [ctaImg3, setCtaImg3] = useState("");
   const [ctaImg4, setCtaImg4] = useState("");
 
-  // Мемоизированные запросы для оптимизации
+  // Мемоизированные запросы
   const bookingsQuery = useMemoFirebase(() => {
-    if (!db) return null;
+    if (!db || isAdmin === false) return null;
     return query(collection(db, "bookings"), orderBy("createdAt", "desc"), limit(50));
-  }, [db]);
+  }, [db, isAdmin]);
 
   const servicesQuery = useMemoFirebase(() => {
-    if (!db) return null;
+    if (!db || isAdmin === false) return null;
     return query(collection(db, "services"), orderBy("createdAt", "desc"));
-  }, [db]);
+  }, [db, isAdmin]);
 
   const barbersQuery = useMemoFirebase(() => {
-    if (!db) return null;
+    if (!db || isAdmin === false) return null;
     return query(collection(db, "barbers"), orderBy("createdAt", "desc"));
-  }, [db]);
+  }, [db, isAdmin]);
 
   const siteContentRef = useMemoFirebase(() => {
-    if (!db) return null;
+    if (!db || isAdmin === false) return null;
     return doc(db, "settings", "site-content");
-  }, [db]);
+  }, [db, isAdmin]);
 
   const { data: bookings, isLoading: bookingsLoading } = useCollection(bookingsQuery);
   const { data: services, isLoading: servicesLoading } = useCollection(servicesQuery);
@@ -80,10 +83,29 @@ export default function AdminDashboard() {
   const { data: siteContent } = useDoc(siteContentRef);
 
   useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push("/admin/login");
-    }
-  }, [user, isUserLoading, router]);
+    const verifyAdmin = async () => {
+      if (!isUserLoading) {
+        if (!user) {
+          router.push("/admin/login");
+        } else if (db) {
+          try {
+            const adminSnap = await getDoc(doc(db, "roles_admin", user.uid));
+            if (adminSnap.exists()) {
+              setIsAdmin(true);
+            } else {
+              setIsAdmin(false);
+              if (auth) await signOut(auth);
+              router.push("/admin/login");
+            }
+          } catch (e) {
+            console.error("Verification error:", e);
+            setIsAdmin(false);
+          }
+        }
+      }
+    };
+    verifyAdmin();
+  }, [user, isUserLoading, db, router, auth]);
 
   useEffect(() => {
     if (siteContent) {
@@ -207,12 +229,23 @@ export default function AdminDashboard() {
     }
   };
 
-  if (isUserLoading) {
+  if (isUserLoading || isAdmin === null) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
+  }
+
+  if (isAdmin === false) {
+     return (
+       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 text-center">
+         <AlertCircle className="w-16 h-16 text-destructive mb-4" />
+         <h1 className="text-2xl font-bold mb-2">Доступ ограничен</h1>
+         <p className="text-muted-foreground mb-6">У вашей учетной записи ({user?.email}) нет прав доступа к этой панели.</p>
+         <Button onClick={() => router.push("/admin/login")}>Вернуться ко входу</Button>
+       </div>
+     );
   }
 
   return (
