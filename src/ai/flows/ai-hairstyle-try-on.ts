@@ -68,30 +68,37 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
     }
 
     try {
-      // Используем gemini-2.5-flash-image (nano-banana) для редактирования
-      const { media } = await ai.generate({
+      // Используем gemini-2.5-flash-image для редактирования
+      const response = await ai.generate({
         model: 'googleai/gemini-2.5-flash-image',
         prompt: [
           { media: { url: finalPhotoUri } },
           {
             text:
-              `You are a professional hair stylist. Change the hairstyle of the person in the photo to: ${input.hairstyleDescription}. ` +
-              `Maintain the face, background, and lighting. Output ONLY the resulting photo.`,
+              `You are a professional celebrity hair stylist. Your task is to change the hairstyle of the person in the provided photo. ` +
+              `Target hairstyle: ${input.hairstyleDescription}. ` +
+              `CRITICAL INSTRUCTIONS: ` +
+              `1. Maintain the identity of the person (keep the exact same face). ` +
+              `2. Keep the background, lighting, and clothing identical. ` +
+              `3. Only modify the hair on the head to match the description perfectly. ` +
+              `4. Output the resulting image as the primary response.`,
           },
         ],
         config: {
           responseModalities: ['TEXT', 'IMAGE'],
           safetySettings: [
-            { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-            { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
+            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+            { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
+            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
           ],
         },
       });
 
+      const media = response.media;
+
       if (!media || !media.url) {
-        throw new Error('ИИ не смог сгенерировать изображение. Попробуйте другое фото.');
+        throw new Error('ИИ не смог сгенерировать изображение. Возможно, фото не подходит или нарушены правила безопасности.');
       }
 
       return { generatedHairstyleImage: media.url };
@@ -102,9 +109,13 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
       
       if (errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED')) {
         throw new Error(
-          'Бесплатный лимит Google AI исчерпан. Это общая очередь для всех пользователей. ' +
-          'Пожалуйста, подождите ровно 60 секунд и нажмите кнопку еще раз. ' +
-          'Если ошибка повторяется, попробуйте создать новый API ключ в другом проекте Google Cloud.'
+          'Лимит запросов исчерпан. Пожалуйста, подождите 60 секунд и попробуйте снова.'
+        );
+      }
+
+      if (errMsg.includes('invalid_argument') || errMsg.includes('400')) {
+        throw new Error(
+          'Ошибка параметров (invalid_argument). Попробуйте использовать другое фото или более короткое описание стиля.'
         );
       }
       
