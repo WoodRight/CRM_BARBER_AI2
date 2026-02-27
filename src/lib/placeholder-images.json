@@ -2,45 +2,45 @@
   "placeholderImages": [
     {
       "id": "hero-bg",
-      "description": "Атмосферный фон барбершопа",
-      "imageUrl": "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?q=80&w=1920&auto=format&fit=crop",
+      "description": "Атмосферный фон барбершопа в стиле лофт",
+      "imageUrl": "https://images.unsplash.com/photo-1512690118975-3949988188ef?q=80&w=1920&auto=format&fit=crop",
       "imageHint": "barber shop interior"
     },
     {
       "id": "hero-barber",
-      "description": "Профессиональный барбер за работой",
-      "imageUrl": "https://images.unsplash.com/photo-1621605815841-28d645d5af9a?q=80&w=1080&auto=format&fit=crop",
-      "imageHint": "barber working"
+      "description": "Профессиональный барбер за работой с опасной бритвой",
+      "imageUrl": "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?q=80&w=1080&auto=format&fit=crop",
+      "imageHint": "barber shaving"
     },
     {
       "id": "cta-haircut-1",
-      "description": "Классический фейд",
-      "imageUrl": "https://images.unsplash.com/photo-1503910368127-b459c72b3593?q=80&w=600&auto=format&fit=crop",
-      "imageHint": "men haircut fade"
+      "description": "Стильный мужской фейд",
+      "imageUrl": "https://images.unsplash.com/photo-1593702295094-ada74bc4a39d?q=80&w=600&auto=format&fit=crop",
+      "imageHint": "men haircut"
     },
     {
       "id": "cta-haircut-2",
-      "description": "Уход за бородой",
-      "imageUrl": "https://images.unsplash.com/photo-1622286332618-f2802b9c54c4?q=80&w=600&auto=format&fit=crop",
-      "imageHint": "beard trim"
+      "description": "Уход за бородой и усами",
+      "imageUrl": "https://images.unsplash.com/photo-1504190772702-8610ae7edda7?q=80&w=600&auto=format&fit=crop",
+      "imageHint": "beard grooming"
     },
     {
       "id": "cta-haircut-3",
-      "description": "Стильная укладка",
-      "imageUrl": "https://images.unsplash.com/photo-1605497746444-1ae0733b0042?q=80&w=600&auto=format&fit=crop",
-      "imageHint": "hair style men"
+      "description": "Классическая укладка помпадур",
+      "imageUrl": "https://images.unsplash.com/photo-1621605815841-28d645d5af9a?q=80&w=600&auto=format&fit=crop",
+      "imageHint": "hair pompadour"
     },
     {
       "id": "cta-haircut-4",
-      "description": "Инструменты мастера",
+      "description": "Мастер за работой",
       "imageUrl": "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?q=80&w=600&auto=format&fit=crop",
-      "imageHint": "barber tools"
+      "imageHint": "barber cutting"
     },
     {
       "id": "sample-man-portrait",
-      "description": "Оптимизированный портрет для ИИ",
-      "imageUrl": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=512&h=512&auto=format&fit=crop",
-      "imageHint": "man portrait face"
+      "description": "Качественный мужской портрет для ИИ-примерки",
+      "imageUrl": "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?q=80&w=512&h=512&auto=format&fit=crop",
+      "imageHint": "man portrait"
     }
   ]
 }

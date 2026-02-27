@@ -2,58 +2,46 @@
 {
   "placeholderImages": [
     {
+      "id": "hero-bg",
+      "description": "Атмосферный фон барбершопа в стиле лофт",
+      "imageUrl": "https://images.unsplash.com/photo-1512690118975-3949988188ef?q=80&w=1920&auto=format&fit=crop",
+      "imageHint": "barber shop interior"
+    },
+    {
       "id": "hero-barber",
-      "description": "Профессиональный барбер за работой",
-      "imageUrl": "https://picsum.photos/seed/barber-hero/1080/720",
-      "imageHint": "barber shop"
-    },
-    {
-      "id": "haircut-fade",
-      "description": "Современная мужская стрижка фейд",
-      "imageUrl": "https://picsum.photos/seed/haircut-1/1080/720",
-      "imageHint": "men haircut"
-    },
-    {
-      "id": "barber-profile-1",
-      "description": "Топ-barber",
-      "imageUrl": "https://picsum.photos/seed/barber-man/1080/1080",
-      "imageHint": "portrait man"
-    },
-    {
-      "id": "barbershop-interior",
-      "description": "Интерьер современного барбершопа",
-      "imageUrl": "https://picsum.photos/seed/barber-interior/1080/720",
-      "imageHint": "modern barbershop"
-    },
-    {
-      "id": "sample-man-portrait",
-      "description": "Пример мужского портрета для ИИ-примерки",
-      "imageUrl": "https://picsum.photos/seed/portrait-sample/512/512",
-      "imageHint": "man portrait"
+      "description": "Профессиональный барбер за работой с опасной бритвой",
+      "imageUrl": "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?q=80&w=1080&auto=format&fit=crop",
+      "imageHint": "barber shaving"
     },
     {
       "id": "cta-haircut-1",
-      "description": "Стильная стрижка 1",
-      "imageUrl": "https://picsum.photos/seed/style-1/400/400",
-      "imageHint": "haircut style"
+      "description": "Стильный мужской фейд",
+      "imageUrl": "https://images.unsplash.com/photo-1593702295094-ada74bc4a39d?q=80&w=600&auto=format&fit=crop",
+      "imageHint": "men haircut"
     },
     {
       "id": "cta-haircut-2",
-      "description": "Стильная стрижка 2",
-      "imageUrl": "https://picsum.photos/seed/style-2/400/400",
-      "imageHint": "barber tools"
+      "description": "Уход за бородой и усами",
+      "imageUrl": "https://images.unsplash.com/photo-1504190772702-8610ae7edda7?q=80&w=600&auto=format&fit=crop",
+      "imageHint": "beard grooming"
     },
     {
       "id": "cta-haircut-3",
-      "description": "Стильная стрижка 3",
-      "imageUrl": "https://picsum.photos/seed/style-3/400/400",
-      "imageHint": "men style"
+      "description": "Классическая укладка помпадур",
+      "imageUrl": "https://images.unsplash.com/photo-1621605815841-28d645d5af9a?q=80&w=600&auto=format&fit=crop",
+      "imageHint": "hair pompadour"
     },
     {
       "id": "cta-haircut-4",
-      "description": "Стильная стрижка 4",
-      "imageUrl": "https://picsum.photos/seed/style-4/400/400",
-      "imageHint": "barber scissors"
+      "description": "Мастер за работой",
+      "imageUrl": "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?q=80&w=600&auto=format&fit=crop",
+      "imageHint": "barber cutting"
+    },
+    {
+      "id": "sample-man-portrait",
+      "description": "Качественный мужской портрет для ИИ-примерки",
+      "imageUrl": "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?q=80&w=512&h=512&auto=format&fit=crop",
+      "imageHint": "man portrait"
     }
   ]
 }
