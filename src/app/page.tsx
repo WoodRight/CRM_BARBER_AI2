@@ -56,10 +56,11 @@ export default function Home() {
                     {heroImg?.imageUrl ? (
                       <Image
                         src={heroImg.imageUrl}
-                        alt={heroImg.description || "Barber shop"}
+                        alt={heroImg.description}
                         fill
                         className="object-cover"
                         data-ai-hint={heroImg.imageHint}
+                        priority
                       />
                     ) : (
                       <div className="w-full h-full bg-muted flex items-center justify-center">
@@ -141,24 +142,24 @@ export default function Home() {
                   <div className="space-y-4 pt-8">
                     {cta1?.imageUrl && (
                       <div className="rounded-2xl overflow-hidden aspect-square relative border-2 border-white/20">
-                        <Image src={cta1.imageUrl} fill alt={cta1.description || "Haircut 1"} className="object-cover" data-ai-hint={cta1.imageHint} />
+                        <Image src={cta1.imageUrl} fill alt={cta1.description} className="object-cover" data-ai-hint={cta1.imageHint} />
                       </div>
                     )}
                     {cta2?.imageUrl && (
                       <div className="rounded-2xl overflow-hidden aspect-square relative border-2 border-white/20">
-                        <Image src={cta2.imageUrl} fill alt={cta2.description || "Haircut 2"} className="object-cover" data-ai-hint={cta2.imageHint} />
+                        <Image src={cta2.imageUrl} fill alt={cta2.description} className="object-cover" data-ai-hint={cta2.imageHint} />
                       </div>
                     )}
                   </div>
                   <div className="space-y-4">
                     {cta3?.imageUrl && (
                       <div className="rounded-2xl overflow-hidden aspect-square relative border-2 border-white/20">
-                        <Image src={cta3.imageUrl} fill alt={cta3.description || "Haircut 3"} className="object-cover" data-ai-hint={cta3.imageHint} />
+                        <Image src={cta3.imageUrl} fill alt={cta3.description} className="object-cover" data-ai-hint={cta3.imageHint} />
                       </div>
                     )}
                     {cta4?.imageUrl && (
                       <div className="rounded-2xl overflow-hidden aspect-square relative border-2 border-white/20">
-                        <Image src={cta4.imageUrl} fill alt={cta4.description || "Haircut 4"} className="object-cover" data-ai-hint={cta4.imageHint} />
+                        <Image src={cta4.imageUrl} fill alt={cta4.description} className="object-cover" data-ai-hint={cta4.imageHint} />
                       </div>
                     )}
                   </div>
