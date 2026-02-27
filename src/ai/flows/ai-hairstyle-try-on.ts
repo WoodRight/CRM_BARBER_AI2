@@ -1,9 +1,12 @@
 'use server';
 /**
- * @fileOverview Этот процесс использует API AILabTools (Hairstyle Editor Pro)
+ * @fileOverview Этот процесс использует обновленный API AILabTools (AILabAPI)
  * для реалистичной примерки причесок на фото пользователя.
  * 
- * Интеграция настроена согласно документации AILabTools.
+ * Интеграция настроена согласно предоставленному CURL:
+ * - Эндпоинт: https://www.ailabapi.com/api/portrait/effects/hairstyle-editor-pro
+ * - Авторизация: заголовок 'ailabapi-api-key'
+ * - Режим: task_type=async с последующим получением результата по task_id.
  */
 
 import { ai } from '@/ai/genkit';
@@ -21,29 +24,18 @@ const AiHairstyleTryOnOutputSchema = z.object({
 export type AiHairstyleTryOnOutput = z.infer<typeof AiHairstyleTryOnOutputSchema>;
 
 /**
- * Карта соответствия названий стилей индексам AILabTools (hair_style)
- * 1: Pompadour, 3: Short/Fade, 7: Man Bun, 8: Side Part, 10: Quiff и т.д.
+ * Карта соответствия названий причесок индексам AILabTools
  */
-const STYLE_MAP: Record<string, number> = {
-  // English keys
-  "Classic Fade": 3,
-  "Pompadour": 1,
-  "Textured Quiff": 10,
-  "Side Part": 8,
-  "Man Bun": 7,
-  "Buzz Cut": 3,
-  "Long Curls": 4,
-  "Taper Fade": 9,
-  // Russian keys
-  "Фейд": 3,
-  "Классический Помпадур": 1,
-  "Текстурированный Квифф": 10,
-  "Пробор на бок": 8,
-  "Мужской пучок": 7,
-  "Бокс": 3,
-  "Длинные кудри": 4,
-  "Тейпер": 9,
-  "Квифф": 10
+const STYLE_MAP: Record<string, string> = {
+  "Фейд": "3",
+  "Классический Помпадур": "1",
+  "Текстурированный Квифф": "10",
+  "Пробор на бок": "8",
+  "Мужской пучок": "7",
+  "Бокс": "3",
+  "Длинные кудри": "4",
+  "Тейпер": "9",
+  "Квифф": "10"
 };
 
 export async function aiHairstyleTryOn(
@@ -59,67 +51,81 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
     outputSchema: AiHairstyleTryOnOutputSchema,
   },
   async (input) => {
-    const appKey = process.env.AILAB_APP_KEY;
-    const appId = process.env.AILAB_APP_ID;
+    const apiKey = process.env.AILAB_API_KEY;
 
-    if (!appKey) {
-      throw new Error('Ключ API AILabTools (AILAB_APP_KEY) не найден в .env');
+    if (!apiKey) {
+      throw new Error('API ключ AILabTools (AILAB_API_KEY) не найден в .env');
     }
 
-    if (!appId) {
-      throw new Error('App ID для AILabTools не найден. Проверьте поле AILAB_APP_ID в .env');
-    }
+    // 1. Подготовка данных (переводим Data URI в Blob/File для multipart/form-data)
+    const base64Content = input.photoDataUri.split(',')[1];
+    const styleId = STYLE_MAP[input.hairstyleDescription] || "3";
 
-    // Очищаем base64 от префикса (API требует чистый base64 без "data:image/png;base64,")
-    const base64Image = input.photoDataUri.includes(',') 
-      ? input.photoDataUri.split(',')[1] 
-      : input.photoDataUri;
-    
-    // Определяем индекс прически (по умолчанию 3 - короткая мужская)
-    const styleIndex = STYLE_MAP[input.hairstyleDescription] || 3;
-
-    // Параметры запроса согласно документации AILabTools
-    const formData = new URLSearchParams();
-    formData.append('app_id', appId); 
-    formData.append('app_key', appKey);
-    formData.append('image', base64Image);
-    formData.append('task_type', 'hairstyle');
-    formData.append('hair_style', styleIndex.toString());
+    const formData = new FormData();
+    formData.append('task_type', 'async');
+    formData.append('image', base64Content); // API AILab часто принимает base64 в поле image
+    formData.append('hair_style', styleId);
 
     try {
-      const response = await fetch('https://api-us.ailabtools.com/ai/portrait/effects/hairstyle-editor-pro', {
+      // 2. Создание асинхронной задачи
+      const createResponse = await fetch('https://www.ailabapi.com/api/portrait/effects/hairstyle-editor-pro', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'ailabapi-api-key': apiKey,
         },
-        body: formData.toString(),
+        body: formData,
       });
 
-      if (!response.ok) {
-        throw new Error(`Ошибка сети: ${response.status} ${response.statusText}`);
+      const createResult = await createResponse.json();
+
+      if (createResult.error_code !== 0) {
+        throw new Error(`AILabTools Create Error: ${createResult.error_msg} (Код: ${createResult.error_code})`);
       }
 
-      const result = await response.json();
+      const taskId = createResult.data.task_id;
+      if (!taskId) {
+        throw new Error('API не вернуло task_id. Возможно, сервис перегружен.');
+      }
 
-      // Обработка ошибок самого API AILabTools
-      if (result.error_code !== 0) {
-        let errorMsg = result.error_msg;
-        if (result.error_code === 10001) errorMsg = "Неверный App ID или App Key. Проверьте данные в .env";
-        if (result.error_code === 10003) errorMsg = "Недостаточно средств на балансе AILabTools.";
+      // 3. Опрос (Polling) результата задачи
+      let resultImage = null;
+      let attempts = 0;
+      const maxAttempts = 12; // Максимум 60 секунд ожидания (12 * 5 сек)
+
+      while (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 5000)); // Ждем 5 секунд между проверками
         
-        throw new Error(`AILabTools Error: ${errorMsg} (Код: ${result.error_code})`);
+        const pollResponse = await fetch(`https://www.ailabapi.com/api/common/get_async_result?task_id=${taskId}`, {
+          method: 'GET',
+          headers: {
+            'ailabapi-api-key': apiKey,
+          },
+        });
+
+        const pollResult = await pollResponse.json();
+
+        // Статус задачи (2: завершено успешно, 1: в процессе, 3: ошибка)
+        if (pollResult.data && pollResult.data.task_status === 2) {
+          resultImage = pollResult.data.result_list[0].image;
+          break;
+        } else if (pollResult.data && pollResult.data.task_status === 3) {
+          throw new Error(`Ошибка обработки на стороне сервера AILab: ${pollResult.error_msg}`);
+        }
+
+        attempts++;
       }
 
-      if (!result.data || !result.data.image) {
-        throw new Error('API успешно отработало, но не вернуло изображение. Возможно, лицо на фото не распознано.');
+      if (!resultImage) {
+        throw new Error('Время ожидания обработки фото истекло. Попробуйте еще раз с фото меньшего размера.');
       }
 
       return { 
-        generatedHairstyleImage: `data:image/png;base64,${result.data.image}` 
+        generatedHairstyleImage: resultImage.startsWith('http') ? resultImage : `data:image/png;base64,${resultImage}` 
       };
+
     } catch (error: any) {
-      console.error('AILabTools Flow Error:', error);
-      throw new Error(error.message || 'Произошла ошибка при обработке фото через AILabTools');
+      console.error('AILabTools Polling Error:', error);
+      throw new Error(error.message || 'Произошла ошибка при связи с сервером AILabTools');
     }
   }
 );
