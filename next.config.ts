@@ -28,6 +28,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'ailab-result-rapidapi.oss-accelerate.aliyuncs.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
 };
