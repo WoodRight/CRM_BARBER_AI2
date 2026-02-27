@@ -16,12 +16,12 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const HAIRSTYLES = [
+  "Бокс",
   "Фейд",
   "Классический Помпадур",
   "Текстурированный Квифф",
   "Пробор на бок",
   "Мужской пучок",
-  "Бокс",
   "Длинные кудри",
   "Тейпер"
 ];
@@ -193,7 +193,7 @@ export default function VisualizerPage() {
                   ))}
                 </div>
                 <Input 
-                  placeholder="Или опишите свой стиль..." 
+                  placeholder="Или впишите ID стиля (напр. UnderCut)" 
                   value={customStyle}
                   onChange={(e) => { setCustomStyle(e.target.value); setSelectedStyle(""); }}
                 />

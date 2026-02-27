@@ -24,19 +24,22 @@ const AiHairstyleTryOnOutputSchema = z.object({
 export type AiHairstyleTryOnOutput = z.infer<typeof AiHairstyleTryOnOutputSchema>;
 
 /**
- * Карта соответствия названий причесок индексам AILabTools
- * Используем строковые значения, так как FormData передает всё как строки.
+ * Карта соответствия названий причесок строковым идентификаторам AILabTools.
+ * Теперь используем только поддерживаемые строковые значения из ошибки API.
  */
 const STYLE_MAP: Record<string, string> = {
-  "Фейд": "3",
-  "Классический Помпадур": "1",
-  "Текстурированный Квифф": "10",
-  "Пробор на бок": "8",
-  "Мужской пучок": "7",
-  "Бокс": "3",
-  "Длинные кудри": "4",
-  "Тейпер": "9",
-  "Квифф": "10"
+  "Фейд": "LowFade",
+  "Классический Помпадур": "Pompadour",
+  "Текстурированный Квифф": "TexturedFringe",
+  "Пробор на бок": "Side-Parted_Textured",
+  "Мужской пучок": "ManBun",
+  "Бокс": "BuzzCut",
+  "Длинные кудри": "LongCurly",
+  "Тейпер": "HighTightFade",
+  "Квифф": "TexturedFringe",
+  "Андеркат": "UnderCut",
+  "Афро": "Afro",
+  "Дреды": "Dreadlocks"
 };
 
 export async function aiHairstyleTryOn(
@@ -65,7 +68,8 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
     // Создаем объект File для корректной работы multipart/form-data в Node.js
     const file = new File([buffer], 'user_photo.jpg', { type: 'image/jpeg' });
 
-    const styleId = STYLE_MAP[input.hairstyleDescription] || "3";
+    // Получаем корректный ID прически или используем BuzzCut как надежный стандарт
+    const styleId = STYLE_MAP[input.hairstyleDescription] || "BuzzCut";
 
     const formData = new FormData();
     formData.append('task_type', 'async');
@@ -78,14 +82,12 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
         method: 'POST',
         headers: {
           'ailabapi-api-key': apiKey,
-          // НЕ устанавливаем Content-Type вручную, fetch сделает это сам с правильным boundary
         },
         body: formData,
       });
 
       const createResult = await createResponse.json();
 
-      // Обработка ошибок создания задачи (включая "invalid parametr")
       if (createResult.error_code !== 0) {
         console.error('AILab Create Task Error Payload:', createResult);
         throw new Error(`Ошибка API (${createResult.error_code}): ${createResult.error_msg || 'Некорректные параметры запроса'}`);
@@ -99,10 +101,9 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
       // 3. Опрос (Polling) результата
       let resultImage = null;
       let attempts = 0;
-      const maxAttempts = 15; // Увеличиваем до 75 секунд ожидания
+      const maxAttempts = 15; 
 
       while (attempts < maxAttempts) {
-        // Ожидание перед каждой проверкой (первое ожидание 5 сек)
         await new Promise(resolve => setTimeout(resolve, 5000));
         
         const pollResponse = await fetch(`https://www.ailabapi.com/api/common/get_async_result?task_id=${taskId}`, {
@@ -114,7 +115,6 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
 
         const pollResult = await pollResponse.json();
 
-        // task_status: 2 - успех, 1 - в работе, 3 - ошибка
         if (pollResult.data && pollResult.data.task_status === 2) {
           resultImage = pollResult.data.result_list[0].image;
           break;
@@ -126,10 +126,9 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
       }
 
       if (!resultImage) {
-        throw new Error('Время ожидания истекло. Возможно, фото слишком большое для обработки.');
+        throw new Error('Время ожидания истекло. Попробуйте фото меньшего размера.');
       }
 
-      // Возвращаем результат (URL или Base64 в зависимости от того, что вернет API)
       return { 
         generatedHairstyleImage: resultImage.startsWith('http') ? resultImage : `data:image/png;base64,${resultImage}` 
       };
