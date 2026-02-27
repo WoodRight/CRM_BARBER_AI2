@@ -19,12 +19,6 @@
       "imageHint": "portrait man"
     },
     {
-      "id": "barber-profile-2",
-      "description": "Старший стилист Сара",
-      "imageUrl": "https://images.unsplash.com/photo-1614436201459-156d322d38c6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxwb3J0cmFpdCUyMHdvbWFufGVufDB8fHx8MTc3MjE2OTA5MHww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "portrait woman"
-    },
-    {
       "id": "barbershop-interior",
       "description": "Интерьер современного барбершопа",
       "imageUrl": "https://images.unsplash.com/photo-1572663459735-75425e957ab9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxtb2Rlcm4lMjBiYXJiZXJzaG9wfGVufDB8fHx8MTc3MjE5MDQ4NXww&ixlib=rb-4.1.0&q=80&w=1080",
@@ -33,7 +27,7 @@
     {
       "id": "sample-man-portrait",
       "description": "Пример мужского портрета для ИИ-примерки",
-      "imageUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=256&h=256&auto=format&fit=crop",
+      "imageUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=512&h=512&auto=format&fit=crop",
       "imageHint": "man portrait"
     }
   ]

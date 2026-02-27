@@ -3,15 +3,13 @@
 import { useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Upload, Sparkles, RefreshCw, Download, Scissors, User, Image as ImageIcon, AlertCircle } from "lucide-react";
+import { Upload, Sparkles, RefreshCw, Scissors, User, Image as ImageIcon, AlertCircle } from "lucide-react";
 import Image from "next/image";
 import { aiHairstyleTryOn } from "@/ai/flows/ai-hairstyle-try-on";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
-import Link from "next/link";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -41,8 +39,8 @@ export default function VisualizerPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 4 * 1024 * 1024) {
-        toast({ variant: "destructive", title: "Файл слишком большой", description: "Пожалуйста, используйте фото до 4 МБ." });
+      if (file.size > 5 * 1024 * 1024) {
+        toast({ variant: "destructive", title: "Файл слишком большой", description: "Пожалуйста, используйте фото до 5 МБ." });
         return;
       }
       const reader = new FileReader();
@@ -60,7 +58,7 @@ export default function VisualizerPage() {
       setPhoto(sampleImage.imageUrl);
       setGeneratedImage(null);
       setErrorDetails(null);
-      toast({ title: "Загружен пример", description: "Используется оптимизированное демо-фото." });
+      toast({ title: "Загружен пример", description: "Используется оптимизированный демо-портрет." });
     }
   };
 
@@ -81,10 +79,7 @@ export default function VisualizerPage() {
     setErrorDetails(null);
     
     const timer = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 90) return prev;
-        return prev + 5;
-      });
+      setProgress((prev) => (prev >= 90 ? prev : prev + 5));
     }, 1000);
 
     try {
@@ -98,11 +93,7 @@ export default function VisualizerPage() {
     } catch (error: any) {
       const msg = error.message || "Ошибка генерации";
       setErrorDetails(msg);
-      toast({ 
-        variant: "destructive", 
-        title: "Ошибка ИИ", 
-        description: msg 
-      });
+      toast({ variant: "destructive", title: "Ошибка ИИ", description: msg });
     } finally {
       setLoading(false);
       clearInterval(timer);
@@ -110,14 +101,14 @@ export default function VisualizerPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-foreground">
       <Navbar />
       
       <main className="pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="mb-10 text-center">
           <h1 className="text-4xl font-headline font-bold mb-4">ИИ-визуализатор <span className="text-accent">причесок</span></h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Использует специализированный алгоритм AILabTools для реалистичной примерки волос на ваше фото.
+            Использует специализированный алгоритм AILabTools для реалистичной примерки волос.
           </p>
         </div>
 
@@ -128,7 +119,7 @@ export default function VisualizerPage() {
             <AlertDescription>
               {errorDetails}
               <div className="mt-2 text-xs opacity-80">
-                Совет: Убедитесь, что на фото хорошо видно лицо. Если ошибка повторяется, попробуйте другое фото или уменьшите размер текущего.
+                Совет: Убедитесь, что на фото четко видно лицо в анфас.
               </div>
             </AlertDescription>
           </Alert>
@@ -147,13 +138,7 @@ export default function VisualizerPage() {
                   className={`border-2 border-dashed rounded-xl p-6 transition-all duration-300 text-center cursor-pointer ${photo ? 'border-primary/50 bg-primary/5' : 'border-border hover:border-accent'}`}
                   onClick={() => document.getElementById('photo-upload')?.click()}
                 >
-                  <input 
-                    type="file" 
-                    id="photo-upload" 
-                    className="hidden" 
-                    accept="image/*" 
-                    onChange={handleFileChange} 
-                  />
+                  <input type="file" id="photo-upload" className="hidden" accept="image/*" onChange={handleFileChange} />
                   {photo ? (
                     <div className="relative aspect-square w-full rounded-lg overflow-hidden border border-border shadow-sm mx-auto">
                        <Image src={photo} alt="Превью" fill className="object-cover" />
@@ -162,7 +147,7 @@ export default function VisualizerPage() {
                     <div className="flex flex-col items-center gap-2 py-4">
                       <Upload className="text-muted-foreground w-8 h-8 mb-2" />
                       <p className="text-sm font-medium">Загрузить портрет</p>
-                      <p className="text-xs text-muted-foreground">До 4МБ</p>
+                      <p className="text-xs text-muted-foreground">До 5 МБ</p>
                     </div>
                   )}
                 </div>
@@ -193,7 +178,7 @@ export default function VisualizerPage() {
                   ))}
                 </div>
                 <Input 
-                  placeholder="Или впишите ID стиля (напр. UnderCut)" 
+                  placeholder="Или впишите стиль..." 
                   value={customStyle}
                   onChange={(e) => { setCustomStyle(e.target.value); setSelectedStyle(""); }}
                 />
@@ -209,16 +194,13 @@ export default function VisualizerPage() {
             </Card>
           </div>
 
-          <div className="lg:col-span-2 space-y-6">
-             <Card className="bg-card border-border shadow-xl h-full flex flex-col min-h-[500px]">
-                <CardHeader>
-                  <CardTitle>Результат</CardTitle>
-                </CardHeader>
-                <CardContent className="flex-1 flex flex-col items-center justify-center bg-secondary/10 p-4">
+          <div className="lg:col-span-2">
+             <Card className="bg-card border-border shadow-xl h-full min-h-[500px] flex flex-col">
+                <CardContent className="flex-1 flex flex-col items-center justify-center bg-secondary/10 p-4 rounded-xl">
                   {loading ? (
                     <div className="w-full max-w-md text-center space-y-4">
                        <Progress value={progress} className="h-2" />
-                       <p className="text-sm font-medium animate-pulse">ИИ трансформирует прическу...</p>
+                       <p className="text-sm font-medium animate-pulse">ИИ трансформирует ваш образ...</p>
                     </div>
                   ) : generatedImage ? (
                     <div className="relative w-full h-full max-w-lg aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl">
