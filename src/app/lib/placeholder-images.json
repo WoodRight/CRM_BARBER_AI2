@@ -4,56 +4,56 @@
     {
       "id": "hero-barber",
       "description": "Профессиональный барбер за работой",
-      "imageUrl": "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?q=80&w=1080&auto=format&fit=crop",
+      "imageUrl": "https://picsum.photos/seed/barber-hero/1080/720",
       "imageHint": "barber shop"
     },
     {
       "id": "haircut-fade",
       "description": "Современная мужская стрижка фейд",
-      "imageUrl": "https://images.unsplash.com/photo-1593702275687-f8b402bf1fb5?q=80&w=1080&auto=format&fit=crop",
+      "imageUrl": "https://picsum.photos/seed/haircut-1/1080/720",
       "imageHint": "men haircut"
     },
     {
       "id": "barber-profile-1",
-      "description": "Топ-барбер Алекс",
-      "imageUrl": "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=1080&auto=format&fit=crop",
+      "description": "Топ-barber",
+      "imageUrl": "https://picsum.photos/seed/barber-man/1080/1080",
       "imageHint": "portrait man"
     },
     {
       "id": "barbershop-interior",
       "description": "Интерьер современного барбершопа",
-      "imageUrl": "https://images.unsplash.com/photo-1572663459735-75425e957ab9?q=80&w=1080&auto=format&fit=crop",
+      "imageUrl": "https://picsum.photos/seed/barber-interior/1080/720",
       "imageHint": "modern barbershop"
     },
     {
       "id": "sample-man-portrait",
       "description": "Пример мужского портрета для ИИ-примерки",
-      "imageUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=512&h=512&auto=format&fit=crop",
+      "imageUrl": "https://picsum.photos/seed/portrait-sample/512/512",
       "imageHint": "man portrait"
     },
     {
       "id": "cta-haircut-1",
       "description": "Стильная стрижка 1",
-      "imageUrl": "https://images.unsplash.com/photo-1503910368127-b459c72b3593?q=80&w=300&h=300&auto=format&fit=crop",
+      "imageUrl": "https://picsum.photos/seed/style-1/400/400",
       "imageHint": "haircut style"
     },
     {
       "id": "cta-haircut-2",
       "description": "Стильная стрижка 2",
-      "imageUrl": "https://images.unsplash.com/photo-1621605815841-28d645d5af9a?q=80&w=300&h=300&auto=format&fit=crop",
-      "imageHint": "barber scissors"
+      "imageUrl": "https://picsum.photos/seed/style-2/400/400",
+      "imageHint": "barber tools"
     },
     {
       "id": "cta-haircut-3",
       "description": "Стильная стрижка 3",
-      "imageUrl": "https://images.unsplash.com/photo-1605497746444-1ae0733b0042?q=80&w=300&h=300&auto=format&fit=crop",
+      "imageUrl": "https://picsum.photos/seed/style-3/400/400",
       "imageHint": "men style"
     },
     {
       "id": "cta-haircut-4",
-      "description": "Инструменты барбера",
-      "imageUrl": "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?q=80&w=300&h=300&auto=format&fit=crop",
-      "imageHint": "barber shop"
+      "description": "Стильная стрижка 4",
+      "imageUrl": "https://picsum.photos/seed/style-4/400/400",
+      "imageHint": "barber scissors"
     }
   ]
 }
