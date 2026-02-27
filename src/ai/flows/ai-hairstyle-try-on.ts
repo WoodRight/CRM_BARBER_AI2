@@ -25,7 +25,7 @@ export type AiHairstyleTryOnOutput = z.infer<typeof AiHairstyleTryOnOutputSchema
 
 /**
  * Карта соответствия названий причесок строковым идентификаторам AILabTools.
- * Теперь используем только поддерживаемые строковые значения из ошибки API.
+ * Используем только поддерживаемые строковые значения из официального списка API.
  */
 const STYLE_MAP: Record<string, string> = {
   "Фейд": "LowFade",
@@ -62,7 +62,11 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
     }
 
     // 1. Подготовка бинарных данных из Data URI
-    const base64Data = input.photoDataUri.split(',')[1];
+    const parts = input.photoDataUri.split(',');
+    if (parts.length < 2) {
+      throw new Error('Некорректный формат изображения.');
+    }
+    const base64Data = parts[1];
     const buffer = Buffer.from(base64Data, 'base64');
     
     // Создаем объект File для корректной работы multipart/form-data в Node.js
@@ -88,22 +92,25 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
 
       const createResult = await createResponse.json();
 
-      if (createResult.error_code !== 0) {
+      // Проверка на ошибки API или отсутствие данных
+      if (!createResult || createResult.error_code !== 0 || !createResult.data) {
         console.error('AILab Create Task Error Payload:', createResult);
-        throw new Error(`Ошибка API (${createResult.error_code}): ${createResult.error_msg || 'Некорректные параметры запроса'}`);
+        const errorMsg = createResult?.error_msg || createResult?.message || 'Сервер вернул пустой ответ или некорректные параметры';
+        throw new Error(`Ошибка API (${createResult?.error_code || 'Unknown'}): ${errorMsg}`);
       }
 
       const taskId = createResult.data.task_id;
       if (!taskId) {
-        throw new Error('Сервер не вернул ID задачи. Попробуйте еще раз.');
+        throw new Error('Сервер не вернул ID задачи. Попробуйте еще раз с другим фото.');
       }
 
       // 3. Опрос (Polling) результата
       let resultImage = null;
       let attempts = 0;
-      const maxAttempts = 15; 
+      const maxAttempts = 12; // Максимум 1 минута ожидания (12 * 5 сек)
 
       while (attempts < maxAttempts) {
+        // Ждем 5 секунд перед следующим опросом
         await new Promise(resolve => setTimeout(resolve, 5000));
         
         const pollResponse = await fetch(`https://www.ailabapi.com/api/common/get_async_result?task_id=${taskId}`, {
@@ -115,18 +122,21 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
 
         const pollResult = await pollResponse.json();
 
-        if (pollResult.data && pollResult.data.task_status === 2) {
+        // Статус 2 означает успех
+        if (pollResult.data && pollResult.data.task_status === 2 && pollResult.data.result_list?.[0]?.image) {
           resultImage = pollResult.data.result_list[0].image;
           break;
-        } else if (pollResult.data && pollResult.data.task_status === 3) {
-          throw new Error(`Ошибка обработки: ${pollResult.error_msg || 'Сервер отклонил фото'}`);
+        } 
+        // Статус 3 означает ошибку обработки
+        else if (pollResult.data && pollResult.data.task_status === 3) {
+          throw new Error(`Ошибка обработки: ${pollResult.error_msg || 'Сервер отклонил фото (возможно, лицо не распознано)'}`);
         }
 
         attempts++;
       }
 
       if (!resultImage) {
-        throw new Error('Время ожидания истекло. Попробуйте фото меньшего размера.');
+        throw new Error('Время ожидания обработки истекло. Попробуйте фото меньшего размера.');
       }
 
       return { 
