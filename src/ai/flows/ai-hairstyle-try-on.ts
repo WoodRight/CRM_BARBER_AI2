@@ -1,12 +1,12 @@
 'use server';
 /**
  * @fileOverview Этот процесс использует API AILabTools (AILabAPI)
- * для реалистичной примерки причесок на фото пользователя.
+ * для асинхронной примерки причесок.
  * 
- * Интеграция настроена согласно предоставленному коду:
- * 1. POST на /hairstyle-editor-pro (task_type=async)
- * 2. Получение task_id
- * 3. GET на /get_async_result для проверки статуса (polling)
+ * Логика переписана в точном соответствии с предоставленным Python примером:
+ * 1. POST на /hairstyle-editor-pro с task_type=async.
+ * 2. Получение task_id (проверка в корне и в data).
+ * 3. Циклический опрос /query-async-task-result каждые 5 секунд.
  */
 
 import { ai } from '@/ai/genkit';
@@ -27,18 +27,18 @@ export type AiHairstyleTryOnOutput = z.infer<typeof AiHairstyleTryOnOutputSchema
  * Карта соответствия названий причесок строковым идентификаторам AILabTools.
  */
 const STYLE_MAP: Record<string, string> = {
+  "Бокс": "BuzzCut",
   "Фейд": "LowFade",
   "Классический Помпадур": "Pompadour",
   "Текстурированный Квифф": "TexturedFringe",
   "Пробор на бок": "Side-Parted_Textured",
   "Мужской пучок": "ManBun",
-  "Бокс": "BuzzCut",
-  "Длинные кудри": "LongCurly",
-  "Тейпер": "HighTightFade",
-  "Квифф": "TexturedFringe",
   "Андеркат": "UnderCut",
   "Афро": "Afro",
-  "Дреды": "Dreadlocks"
+  "Длинные кудри": "LongCurly",
+  "Дреды": "Dreadlocks",
+  "Тейпер": "HighTightFade",
+  "Квифф": "TexturedFringe"
 };
 
 export async function aiHairstyleTryOn(
@@ -54,10 +54,9 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
     outputSchema: AiHairstyleTryOnOutputSchema,
   },
   async (input) => {
-    // Вставляем ваш проверенный ключ
     const apiKey = "VjEL6M5wqiYtQZnJUeTRoK3LBuzpxIw3zWrAhtHGOaW0xDrlfdn9DAyFCFMGhj1N";
 
-    // 1. Подготовка бинарных данных из Data URI
+    // 1. Подготовка бинарных данных
     const parts = input.photoDataUri.split(',');
     if (parts.length < 2) {
       throw new Error('Некорректный формат изображения.');
@@ -69,10 +68,9 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
     const buffer = Buffer.from(base64Data, 'base64');
     const blob = new Blob([buffer], { type: contentType });
 
-    // Получаем корректный ID прически из маппинга
     const styleId = STYLE_MAP[input.hairstyleDescription] || "BuzzCut";
 
-    // Формируем FormData для отправки задачи
+    // Формируем FormData в точности как в requests.post(..., data=data, files=files)
     const formData = new FormData();
     formData.append('task_type', 'async');
     formData.append('image', blob, 'image.jpg');
@@ -96,26 +94,30 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
         throw new Error(`Ошибка API (${createResult.error_code}): ${createResult.error_msg || 'Не удалось создать задачу'}`);
       }
 
-      const taskId = createResult.data?.task_id;
+      // Проверяем ID задачи как в data, так и в корне (разные версии API возвращают по-разному)
+      const taskId = createResult.data?.task_id || createResult.task_id;
+      
       if (!taskId) {
-        throw new Error('Сервер не вернул task_id. Попробуйте другое фото.');
+        console.error('AILab Response structure:', createResult);
+        throw new Error('Сервер не вернул task_id. Попробуйте другое фото или проверьте лимиты API.');
       }
 
       console.log('AILab: Задача создана успешно. ID:', taskId);
 
-      // 3. Опрос (Polling) результата - цикл как в вашем примере
+      // 2. Опрос (Polling) статуса как в Python: while True -> sleep(5)
       let resultImage = null;
       let attempts = 0;
-      const maxAttempts = 20; // Ожидаем до 100 секунд (20 попыток по 5 сек)
+      const maxAttempts = 30; // Ожидаем до 150 секунд
+
+      const queryUrl = "https://www.ailabapi.com/api/common/query-async-task-result";
 
       while (attempts < maxAttempts) {
         attempts++;
         console.log(`AILab: Ожидание результата... (Попытка ${attempts}/${maxAttempts})`);
         
-        // Ждем 5 секунд перед проверкой (как в time.sleep(5))
         await new Promise(resolve => setTimeout(resolve, 5000));
         
-        const pollResponse = await fetch(`https://www.ailabapi.com/api/common/get_async_result?task_id=${taskId}`, {
+        const pollResponse = await fetch(`${queryUrl}?task_id=${taskId}`, {
           method: 'GET',
           headers: {
             'ailabapi-api-key': apiKey,
@@ -129,12 +131,15 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
         }
 
         // task_status: 2 - готово, 0/1 - в очереди или обработке
-        const taskStatus = pollResult.data?.task_status;
+        const taskStatus = pollResult.task_status !== undefined ? pollResult.task_status : (pollResult.data?.task_status);
         console.log(`AILab: Текущий статус задачи: ${taskStatus}`);
 
         if (taskStatus === 2) {
-          // Успех! Извлекаем изображение из списка результатов
-          resultImage = pollResult.data.result_list?.[0]?.image;
+          // Успех! Извлекаем изображение
+          // В асинхронных задачах результат часто лежит в data.result_list или просто в data.image
+          const data = pollResult.data;
+          resultImage = data?.result_list?.[0]?.image || data?.image || data?.url;
+          
           if (resultImage) {
             console.log('AILab: Изображение успешно получено!');
             break;
@@ -145,10 +150,9 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
       }
 
       if (!resultImage) {
-        throw new Error('Превышено время ожидания обработки ИИ.');
+        throw new Error('Превышено время ожидания обработки или сервер не вернул URL изображения.');
       }
 
-      // Возвращаем результат (сервис обычно возвращает base64 или URL)
       return { 
         generatedHairstyleImage: resultImage.startsWith('http') ? resultImage : `data:image/png;base64,${resultImage}` 
       };
