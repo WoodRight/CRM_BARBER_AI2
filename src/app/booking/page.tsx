@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,9 @@ import {
   CheckCircle2, 
   Sparkles,
   RefreshCw,
-  Scissors
+  Upload,
+  User,
+  Image as ImageIcon
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -55,7 +57,8 @@ export default function BookingPage() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [aiGeneratedImage, setAiGeneratedImage] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiStyle, setAiStyle] = useState("");
+  const [aiStyle, setAiStyle] = useState("Андеркат");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { toast } = useToast();
   const db = useFirestore();
@@ -66,8 +69,24 @@ export default function BookingPage() {
     setStep(prev => prev + 1);
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({ variant: "destructive", title: "Файл слишком большой", description: "Максимальный размер 5 МБ." });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhoto(reader.result as string);
+        setAiGeneratedImage(null);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleAiVisualize = async () => {
-    if (!photo || !aiStyle) return toast({ variant: "destructive", title: "Заполните данные для ИИ" });
+    if (!photo || !aiStyle) return toast({ variant: "destructive", title: "Загрузите фото и выберите стиль" });
     setAiLoading(true);
     try {
       const result = await aiHairstyleTryOn({ photoDataUri: photo, hairstyleDescription: aiStyle });
@@ -109,24 +128,76 @@ export default function BookingPage() {
                 <h2 className="text-2xl font-headline font-bold flex items-center gap-2"><Sparkles className="text-accent" /> ИИ-стилист</h2>
                 <Button variant="ghost" onClick={() => setStep(3)}>Пропустить</Button>
              </div>
-             <Card>
-               <CardContent className="p-6 space-y-4">
-                 <div className="flex gap-2">
-                   <Button variant="outline" className="flex-1" onClick={() => setPhoto(PlaceHolderImages.find(i=>i.id==="sample-man-portrait")?.imageUrl || null)}>Пример фото</Button>
-                 </div>
-                 <ScrollArea className="h-24">
-                   <div className="flex flex-wrap gap-2">
-                     {HAIRSTYLES.map(s => (
-                       <Button key={s} size="sm" variant={aiStyle === s ? "default" : "outline"} onClick={() => setAiStyle(s)}>{s}</Button>
-                     ))}
+             <Card className="overflow-hidden border-border shadow-lg">
+               <CardContent className="p-6 space-y-6">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   <div className="space-y-4">
+                     <p className="text-sm font-medium text-muted-foreground">1. Загрузите портрет</p>
+                     <div 
+                       className={cn(
+                         "relative aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden",
+                         photo ? "border-primary/40 bg-primary/5" : "border-muted-foreground/20 hover:border-primary/50"
+                       )}
+                       onClick={() => fileInputRef.current?.click()}
+                     >
+                        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
+                        {photo ? (
+                          <Image src={photo} fill alt="Input" className="object-cover" />
+                        ) : (
+                          <div className="text-center p-4">
+                            <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                            <span className="text-xs">Нажмите для загрузки</span>
+                          </div>
+                        )}
+                     </div>
+                     <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full text-[10px]"
+                      onClick={() => setPhoto(PlaceHolderImages.find(i=>i.id==="sample-man-portrait")?.imageUrl || null)}
+                     >
+                       <ImageIcon className="w-3 h-3 mr-1" /> Использовать пример
+                     </Button>
                    </div>
-                 </ScrollArea>
-                 <Input value={aiStyle} onChange={e=>setAiStyle(e.target.value)} placeholder="Или опишите стиль..." />
-                 <Button onClick={handleAiVisualize} disabled={aiLoading || !photo} className="w-full bg-accent">
-                   {aiLoading ? <RefreshCw className="animate-spin mr-2" /> : <Sparkles className="mr-2" />}
-                   {aiLoading ? "Генерация..." : "Создать превью"}
-                 </Button>
-                 {aiGeneratedImage && <div className="relative aspect-square rounded-xl overflow-hidden mt-4 border border-border"><Image src={aiGeneratedImage} fill alt="Result" className="object-cover" /></div>}
+
+                   <div className="space-y-4">
+                     <p className="text-sm font-medium text-muted-foreground">2. Выберите прическу</p>
+                     <ScrollArea className="h-[200px] border rounded-md p-2">
+                       <div className="grid grid-cols-2 gap-2">
+                         {HAIRSTYLES.map(s => (
+                           <Button 
+                            key={s} 
+                            size="sm" 
+                            variant={aiStyle === s ? "default" : "outline"} 
+                            className="text-[10px] h-8"
+                            onClick={() => setAiStyle(s)}
+                           >
+                             {s}
+                           </Button>
+                         ))}
+                       </div>
+                     </ScrollArea>
+                     <Button 
+                      onClick={handleAiVisualize} 
+                      disabled={aiLoading || !photo} 
+                      className="w-full bg-accent hover:bg-accent/90"
+                     >
+                       {aiLoading ? <RefreshCw className="animate-spin mr-2 h-4 w-4" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                       {aiLoading ? "Генерация..." : "Примерить стиль"}
+                     </Button>
+                   </div>
+                 </div>
+
+                 {aiGeneratedImage && (
+                   <div className="mt-6 pt-6 border-t border-border">
+                     <p className="text-center text-sm font-bold mb-4 flex items-center justify-center gap-2">
+                       <CheckCircle2 className="text-green-500 w-4 h-4" /> Ваш новый образ готов
+                     </p>
+                     <div className="relative aspect-square max-w-[300px] mx-auto rounded-2xl overflow-hidden border-4 border-card shadow-2xl">
+                       <Image src={aiGeneratedImage} fill alt="Result" className="object-cover" />
+                     </div>
+                   </div>
+                 )}
                </CardContent>
              </Card>
           </div>
