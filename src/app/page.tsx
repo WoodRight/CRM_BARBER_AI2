@@ -4,7 +4,7 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Sparkles, Scissors, Clock } from "lucide-react";
+import { Sparkles, Scissors, Clock, Instagram, Facebook, MapPin, Phone } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
@@ -146,9 +146,61 @@ export default function Home() {
           </div>
         </section>
 
-        <footer className="bg-background py-20 border-t border-border/50 text-center">
-          <div className="max-w-7xl mx-auto px-4">
-            <p className="text-muted-foreground">&copy; {new Date().getFullYear()} BarBerTok Premium. Все права защищены.</p>
+        <footer className="bg-background py-20 border-t border-border/50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+              <div className="col-span-1 md:col-span-1">
+                <Link href="/" className="flex items-center gap-2 group mb-6">
+                  <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center group-hover:bg-accent transition-colors">
+                    <Scissors className="text-white w-6 h-6" />
+                  </div>
+                  <span className="text-xl font-headline font-bold text-foreground tracking-tight">BarBerTok</span>
+                </Link>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  Премиальный барбершоп, где традиции встречаются с технологиями будущего. Мы создаем ваш идеальный образ с помощью ИИ.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-bold mb-6 text-foreground uppercase tracking-widest text-xs">Навигация</h4>
+                <ul className="space-y-4">
+                  <li><Link href="/#services" className="text-muted-foreground hover:text-accent text-sm transition-colors">Услуги</Link></li>
+                  <li><Link href="/visualizer" className="text-muted-foreground hover:text-accent text-sm transition-colors">ИИ-стилист</Link></li>
+                  <li><Link href="/booking" className="text-muted-foreground hover:text-accent text-sm transition-colors">Запись онлайн</Link></li>
+                  <li><Link href="/admin" className="text-muted-foreground hover:text-accent text-sm transition-colors">Панель управления</Link></li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="font-bold mb-6 text-foreground uppercase tracking-widest text-xs">Контакты</h4>
+                <ul className="space-y-4">
+                  <li className="flex items-start gap-3 text-muted-foreground text-sm">
+                    <MapPin className="w-4 h-4 text-primary shrink-0" />
+                    <span>ул. Премиальная, 42, Москва</span>
+                  </li>
+                  <li className="flex items-center gap-3 text-muted-foreground text-sm">
+                    <Phone className="w-4 h-4 text-primary shrink-0" />
+                    <span>+7 (999) 000-00-00</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="font-bold mb-6 text-foreground uppercase tracking-widest text-xs">Соцсети</h4>
+                <div className="flex gap-4">
+                  <Link href="#" className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-accent hover:text-white transition-all">
+                    <Instagram className="w-5 h-5" />
+                  </Link>
+                  <Link href="#" className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-accent hover:text-white transition-all">
+                    <Facebook className="w-5 h-5" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+            
+            <div className="pt-8 border-t border-border/50 text-center">
+              <p className="text-muted-foreground text-xs">&copy; {new Date().getFullYear()} BarBerTok Premium. Все права защищены.</p>
+            </div>
           </div>
         </footer>
       </main>
