@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -12,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const HAIRSTYLES = [
   "Бокс",
@@ -20,8 +22,12 @@ const HAIRSTYLES = [
   "Текстурированный Квифф",
   "Пробор на бок",
   "Мужской пучок",
+  "Андеркат",
+  "Афро",
   "Длинные кудри",
-  "Тейпер"
+  "Дреды",
+  "Тейпер",
+  "Квифф"
 ];
 
 export default function VisualizerPage() {
@@ -164,19 +170,21 @@ export default function VisualizerPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-2">
-                  {HAIRSTYLES.map((style) => (
-                    <Button
-                      key={style}
-                      variant={selectedStyle === style ? "default" : "outline"}
-                      size="sm"
-                      className="text-xs h-9"
-                      onClick={() => { setSelectedStyle(style); setCustomStyle(""); }}
-                    >
-                      {style}
-                    </Button>
-                  ))}
-                </div>
+                <ScrollArea className="h-48 pr-4">
+                  <div className="grid grid-cols-2 gap-2">
+                    {HAIRSTYLES.map((style) => (
+                      <Button
+                        key={style}
+                        variant={selectedStyle === style ? "default" : "outline"}
+                        size="sm"
+                        className="text-xs h-9 justify-start"
+                        onClick={() => { setSelectedStyle(style); setCustomStyle(""); }}
+                      >
+                        {style}
+                      </Button>
+                    ))}
+                  </div>
+                </ScrollArea>
                 <Input 
                   placeholder="Или впишите стиль..." 
                   value={customStyle}
@@ -196,9 +204,9 @@ export default function VisualizerPage() {
 
           <div className="lg:col-span-2">
              <Card className="bg-card border-border shadow-xl h-full min-h-[500px] flex flex-col">
-                <CardContent className="flex-1 flex flex-col items-center justify-center bg-secondary/10 p-4 rounded-xl">
+                <CardContent className="flex-1 flex flex-col items-center justify-center bg-secondary/10 p-4 rounded-xl relative">
                   {loading ? (
-                    <div className="w-full max-w-md text-center space-y-4">
+                    <div className="w-full max-w-md text-center space-y-4 z-10">
                        <Progress value={progress} className="h-2" />
                        <p className="text-sm font-medium animate-pulse">ИИ трансформирует ваш образ...</p>
                     </div>

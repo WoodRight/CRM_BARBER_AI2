@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -7,10 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   CheckCircle2, 
   Sparkles,
   RefreshCw,
+  Scissors
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -35,6 +38,11 @@ const BARBERS = [
 ];
 
 const TIME_SLOTS = ["09:00", "10:00", "11:00", "13:00", "14:00", "15:00"];
+
+const HAIRSTYLES = [
+  "Бокс", "Фейд", "Классический Помпадур", "Текстурированный Квифф", 
+  "Пробор на бок", "Мужской пучок", "Андеркат", "Афро", "Дреды", "Тейпер"
+];
 
 export default function BookingPage() {
   const [step, setStep] = useState(1);
@@ -72,35 +80,6 @@ export default function BookingPage() {
     }
   };
 
-  const handleConfirm = async () => {
-    if (!selectedTime || !db) {
-       toast({ variant: "destructive", title: "Ошибка", description: "Выберите время" });
-       return;
-    }
-    setIsSubmitting(true);
-    
-    try {
-      // Сохраняем бронирование в Firestore
-      await addDoc(collection(db, "bookings"), {
-        clientName: "Гость", 
-        serviceName: selectedService.name,
-        barberName: selectedBarber.name,
-        date: format(date!, "yyyy-MM-dd"),
-        time: selectedTime,
-        status: "confirmed",
-        totalPrice: selectedService.price,
-        aiResultUrl: aiGeneratedImage || null,
-        createdAt: serverTimestamp()
-      });
-      setStep(5);
-      toast({ title: "Запись подтверждена!" });
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "Ошибка сохранения", description: e.message });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const renderStep = () => {
     switch(step) {
       case 1:
@@ -133,10 +112,17 @@ export default function BookingPage() {
              <Card>
                <CardContent className="p-6 space-y-4">
                  <div className="flex gap-2">
-                   <Button variant="outline" className="flex-1" onClick={() => setPhoto(PlaceHolderImages.find(i=>i.id==="sample-man-portrait")?.imageUrl || null)}>Загрузить пример фото</Button>
+                   <Button variant="outline" className="flex-1" onClick={() => setPhoto(PlaceHolderImages.find(i=>i.id==="sample-man-portrait")?.imageUrl || null)}>Пример фото</Button>
                  </div>
-                 <Input value={aiStyle} onChange={e=>setAiStyle(e.target.value)} placeholder="Описание стиля (например: Фейд)" />
-                 <Button onClick={handleAiVisualize} disabled={aiLoading} className="w-full bg-accent">
+                 <ScrollArea className="h-24">
+                   <div className="flex flex-wrap gap-2">
+                     {HAIRSTYLES.map(s => (
+                       <Button key={s} size="sm" variant={aiStyle === s ? "default" : "outline"} onClick={() => setAiStyle(s)}>{s}</Button>
+                     ))}
+                   </div>
+                 </ScrollArea>
+                 <Input value={aiStyle} onChange={e=>setAiStyle(e.target.value)} placeholder="Или опишите стиль..." />
+                 <Button onClick={handleAiVisualize} disabled={aiLoading || !photo} className="w-full bg-accent">
                    {aiLoading ? <RefreshCw className="animate-spin mr-2" /> : <Sparkles className="mr-2" />}
                    {aiLoading ? "Генерация..." : "Создать превью"}
                  </Button>
@@ -186,6 +172,30 @@ export default function BookingPage() {
           </div>
         );
       default: return null;
+    }
+  };
+
+  const handleConfirm = async () => {
+    if (!selectedTime || !db) return toast({ variant: "destructive", title: "Выберите время" });
+    setIsSubmitting(true);
+    try {
+      await addDoc(collection(db, "bookings"), {
+        clientName: "Гость", 
+        serviceName: selectedService.name,
+        barberName: selectedBarber.name,
+        date: format(date!, "yyyy-MM-dd"),
+        time: selectedTime,
+        status: "confirmed",
+        totalPrice: selectedService.price,
+        aiResultUrl: aiGeneratedImage || null,
+        createdAt: serverTimestamp()
+      });
+      setStep(5);
+      toast({ title: "Запись подтверждена!" });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Ошибка", description: e.message });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
