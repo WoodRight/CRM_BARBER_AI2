@@ -44,12 +44,12 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
   async (input) => {
     let finalPhotoUri = input.photoDataUri.trim();
 
-    // Если это URL, скачиваем его и превращаем в чистый Base64 на сервере
+    // Если это URL (например, из примера), скачиваем его на сервере
     if (finalPhotoUri.startsWith('http')) {
       try {
         const response = await fetch(finalPhotoUri, {
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
           }
         });
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -59,24 +59,38 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
         const base64 = Buffer.from(arrayBuffer).toString('base64');
         finalPhotoUri = `data:${contentType};base64,${base64}`;
       } catch (error: any) {
-        throw new Error(`Ошибка загрузки: ${error.message}`);
+        throw new Error(`Ошибка загрузки изображения: ${error.message}`);
       }
     }
 
+    // Извлекаем чистый Base64 и MIME-тип для корректной отправки в API
+    const matches = finalPhotoUri.match(/^data:([^;]+);base64,(.+)$/);
+    if (!matches) {
+      throw new Error('Некорректный формат изображения. Попробуйте другое фото.');
+    }
+    const contentType = matches[1];
+    const base64Data = matches[2];
+
     try {
-      // Прямой вызов модели для редактирования изображения
       const response = await ai.generate({
         model: 'googleai/gemini-2.5-flash-image',
         prompt: [
-          { media: { url: finalPhotoUri } },
-          { text: `Modify the hairstyle of the person in the photo. Style: ${input.hairstyleDescription}. Keep the face, background and clothing exactly the same.` }
+          {
+            media: {
+              url: `data:${contentType};base64,${base64Data}`,
+              contentType: contentType,
+            },
+          },
+          {
+            text: `Detailed task: Modify only the hair of the person in the provided image. Apply the following style: ${input.hairstyleDescription}. Ensure the face, identity, background, and lighting remain consistent with the original photo. Only change the hairstyle.`,
+          },
         ],
         config: {
           responseModalities: ['TEXT', 'IMAGE'],
-          // Минимальные настройки безопасности для стабильности
           safetySettings: [
             { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
             { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
+            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
           ],
         },
       });
@@ -84,23 +98,23 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
       const media = response.media;
 
       if (!media || !media.url) {
-        throw new Error('ИИ не вернул изображение. Попробуйте использовать более простое описание прически.');
+        throw new Error('ИИ не смог сгенерировать изображение. Попробуйте использовать более простое описание стиля на английском языке.');
       }
 
       return { generatedHairstyleImage: media.url };
     } catch (error: any) {
-      console.error('Genkit Error:', error);
+      console.error('Genkit/Gemini Error:', error);
       const errMsg = error.message || '';
       
       if (errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED')) {
-        throw new Error('Лимит запросов исчерпан. Пожалуйста, подождите 60 секунд перед следующей попыткой.');
+        throw new Error('Лимит запросов API исчерпан. Пожалуйста, подождите 60 секунд перед следующей попыткой.');
       }
 
       if (errMsg.includes('400') || errMsg.includes('invalid_argument')) {
-        throw new Error('Ошибка параметров: Попробуйте загрузить скриншот фото (он весит меньше) или используйте демо-фото.');
+        throw new Error('Ошибка параметров API: Скорее всего, ваш API-ключ не имеет доступа к модели Gemini 2.5 Flash Image. Убедитесь, что модель доступна в вашем Google AI Studio.');
       }
       
-      throw new Error(`Ошибка генерации: ${errMsg}`);
+      throw new Error(`Ошибка ИИ: ${errMsg}`);
     }
   }
 );
