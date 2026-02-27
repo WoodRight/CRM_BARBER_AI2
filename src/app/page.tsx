@@ -1,3 +1,4 @@
+
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,7 +9,10 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 
 export default function Home() {
   const heroImg = PlaceHolderImages.find(img => img.id === "hero-barber");
-  const interiorImg = PlaceHolderImages.find(img => img.id === "barbershop-interior");
+  const cta1 = PlaceHolderImages.find(img => img.id === "cta-haircut-1");
+  const cta2 = PlaceHolderImages.find(img => img.id === "cta-haircut-2");
+  const cta3 = PlaceHolderImages.find(img => img.id === "cta-haircut-3");
+  const cta4 = PlaceHolderImages.find(img => img.id === "cta-haircut-4");
 
   return (
     <div className="min-h-screen bg-background">
@@ -130,18 +134,18 @@ export default function Home() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-4 pt-8">
                     <div className="rounded-2xl overflow-hidden aspect-square relative border-2 border-white/20">
-                      <Image src="https://picsum.photos/seed/face1/300/300" fill alt="Face Shape 1" className="object-cover" />
+                      <Image src={cta1?.imageUrl || ""} fill alt={cta1?.description || ""} className="object-cover" data-ai-hint={cta1?.imageHint} />
                     </div>
                     <div className="rounded-2xl overflow-hidden aspect-square relative border-2 border-white/20">
-                      <Image src="https://picsum.photos/seed/face2/300/300" fill alt="Face Shape 2" className="object-cover" />
+                      <Image src={cta2?.imageUrl || ""} fill alt={cta2?.description || ""} className="object-cover" data-ai-hint={cta2?.imageHint} />
                     </div>
                   </div>
                   <div className="space-y-4">
                     <div className="rounded-2xl overflow-hidden aspect-square relative border-2 border-white/20">
-                      <Image src="https://picsum.photos/seed/face3/300/300" fill alt="Face Shape 3" className="object-cover" />
+                      <Image src={cta3?.imageUrl || ""} fill alt={cta3?.description || ""} className="object-cover" data-ai-hint={cta3?.imageHint} />
                     </div>
                     <div className="rounded-2xl overflow-hidden aspect-square relative border-2 border-white/20">
-                      <Image src="https://picsum.photos/seed/face4/300/300" fill alt="Face Shape 4" className="object-cover" />
+                      <Image src={cta4?.imageUrl || ""} fill alt={cta4?.description || ""} className="object-cover" data-ai-hint={cta4?.imageHint} />
                     </div>
                   </div>
                 </div>
