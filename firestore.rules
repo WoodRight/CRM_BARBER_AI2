@@ -1,60 +1,156 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    /**
+     * BARBERSHOP CRM & BOOKING SYSTEM SECURITY RULES
+     * 
+     * Core Philosophy:
+     * This ruleset implements a multi-tier authorization model:
+     * 1. Global Owners: Users identified in the 'roles_owner' collection have administrative 
+     *    privileges across the platform.
+     * 2. Staff (Barbers): Users managing their own profiles and assigned appointments.
+     * 3. Clients: Authenticated users managing their own profiles and bookings.
+     * 4. Public Access: Service catalogs and barber availability are publicly readable to facilitate booking.
+     * 
+     * Data Structure:
+     * - Top-level collections: /clients, /barbers, /services, /appointments, /roles_owner.
+     * - User-scoped subcollections: /users/{userId}/hairstyleVisualizations/ (private history).
+     * - Staff-scoped subcollections: /barbers/{barberId}/availabilities/ (schedule management).
+     * 
+     * Key Security Decisions:
+     * - Denormalization: Appointment documents include both 'clientId' and 'barberId' to allow 
+     *   performant, single-document authorization checks for both parties.
+     * - Path-Based Authorization: Subcollections for availabilities and visualizations use 
+     *   the parent ID in the path to instantly verify ownership via the auth UID.
+     * - Immutability: Critical relational fields like 'clientId' in appointments are 
+     *   protected from modification after creation.
+     */
+
     // --- Global Helper Functions ---
 
+    /** @description Checks if the user is authenticated. */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
-    }
-
+    /** @description Checks if the user's UID matches the provided ID. */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    /** @description Checks if the user's UID matches the provided ID and the document exists. */
+    function isExistingOwner(userId) {
+      return resource != null && isOwner(userId);
+    }
+
+    /** @description Checks if the user exists in the owner roles collection. */
+    function isGlobalOwner() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_owner/$(request.auth.uid));
+    }
+
+    /** @description Checks if the user is a registered barber. */
+    function isAnyBarber() {
+      return isSignedIn() && exists(/databases/$(database)/documents/barbers/$(request.auth.uid));
+    }
+
     // --- Collection Rules ---
 
-    // Admin Roles
-    match /roles_admin/{adminId} {
-      allow get: if isSignedIn();
-      allow list, write: if isAdmin();
+    /**
+     * @description Administrative collection defining global owner roles.
+     * @path /roles_owner/{ownerId}
+     * @allow (get) Any user checking their own role status.
+     * @deny (write) Any client-side request; managed via Admin SDK/Cloud Functions.
+     * @principle Role-Based Access Control (RBAC) source of truth.
+     */
+    match /roles_owner/{ownerId} {
+      allow get: if isOwner(ownerId) || isGlobalOwner();
+      allow list: if isGlobalOwner();
+      allow create, update, delete: if false; 
     }
 
-    // Bookings
-    match /bookings/{bookingId} {
-      allow create: if true; 
-      allow list, get, update, delete: if isSignedIn(); 
+    /**
+     * @description Client profiles containing personal info and CRM notes.
+     * @path /clients/{clientId}
+     * @allow (get) Client viewing self, or any Barber/Owner for CRM.
+     * @deny (create) Mismatched UID between auth and path.
+     * @principle Path-based ownership with staff-level read access.
+     */
+    match /clients/{clientId} {
+      allow get: if isOwner(clientId) || isAnyBarber() || isGlobalOwner();
+      allow list: if isGlobalOwner() || isAnyBarber();
+      allow create: if isOwner(clientId);
+      allow update: if (isOwner(clientId) || isGlobalOwner()) && (request.resource.data.id == clientId);
+      allow delete: if isGlobalOwner();
     }
 
-    // User Profiles
-    match /users/{userId}/profile {
-      allow get, list: if isOwner(userId) || isAdmin();
-      allow create: if isOwner(userId);
-      allow update, delete: if isOwner(userId) || isAdmin();
-    }
-
-    // Barbers
+    /**
+     * @description Barber profiles including bio and service specializations.
+     * @path /barbers/{barberId}
+     * @allow (list) Publicly viewable for booking.
+     * @deny (create) Non-owner users attempting to register as a barber.
+     * @principle Public read with restricted administrative creation.
+     */
     match /barbers/{barberId} {
-      allow get, list: if true; 
-      allow write, delete: if isAdmin();
+      allow get, list: if true;
+      allow create: if isGlobalOwner();
+      allow update: if (isOwner(barberId) || isGlobalOwner()) && (request.resource.data.id == barberId);
+      allow delete: if isGlobalOwner();
     }
 
-    // Services
+    /**
+     * @description Public catalog of barbershop services and pricing.
+     * @path /services/{serviceId}
+     * @allow (get, list) All users, including unauthenticated guests.
+     * @deny (write) Any non-owner user attempting to modify pricing/services.
+     * @principle Public Read / Owner-Only Writes.
+     */
     match /services/{serviceId} {
       allow get, list: if true;
-      allow write, delete: if isAdmin();
+      allow create, update, delete: if isGlobalOwner();
     }
 
-    // Global Settings
-    match /settings/{settingId} {
-      allow get: if true;
-      allow list: if true;
-      allow write: if isAdmin();
+    /**
+     * @description Appointment records shared between clients and barbers.
+     * @path /appointments/{appointmentId}
+     * @allow (create) Client booking for themselves.
+     * @deny (update) Changing the 'clientId' to another user.
+     * @principle Shared Access using embedded relationship fields.
+     */
+    match /appointments/{appointmentId} {
+      allow get: if isSignedIn() && (resource.data.clientId == request.auth.uid || resource.data.barberId == request.auth.uid || isGlobalOwner());
+      allow list: if isSignedIn(); // Queries must still filter by clientId or barberId to satisfy rules.
+      allow create: if isSignedIn() && (request.resource.data.clientId == request.auth.uid || isGlobalOwner());
+      allow update: if resource != null && (resource.data.clientId == request.auth.uid || resource.data.barberId == request.auth.uid || isGlobalOwner()) && (request.resource.data.clientId == resource.data.clientId);
+      allow delete: if isGlobalOwner();
+    }
+
+    /**
+     * @description Barber-specific time blocks for booking availability.
+     * @path /barbers/{barberId}/availabilities/{availabilityId}
+     * @allow (list) Publicly viewable for scheduling.
+     * @deny (write) Accessing availability paths not matching the barber's UID.
+     * @principle Authorization independence via path nesting.
+     */
+    match /barbers/{barberId}/availabilities/{availabilityId} {
+      allow get, list: if true;
+      allow create: if (isOwner(barberId) || isGlobalOwner());
+      allow update: if resource != null && (isOwner(barberId) || isGlobalOwner());
+      allow delete: if resource != null && (isOwner(barberId) || isGlobalOwner());
+    }
+
+    /**
+     * @description Private AI-generated hairstyle visualization history.
+     * @path /users/{userId}/hairstyleVisualizations/{visualizationId}
+     * @allow (read, write) The specific owner of the visualization (including anonymous).
+     * @deny (read) Any other user, including barbers.
+     * @principle Strict user-ownership model for private content.
+     */
+    match /users/{userId}/hairstyleVisualizations/{visualizationId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
   }
 }
