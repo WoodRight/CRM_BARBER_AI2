@@ -27,8 +27,8 @@ service cloud.firestore {
 
     // Bookings
     match /bookings/{bookingId} {
-      allow create: if true; // Разрешаем гостям создавать записи
-      allow list, get, update, delete: if isSignedIn(); // Для простоты пока разрешаем всем залогиненным (в т.ч. админу)
+      allow create: if true; 
+      allow list, get, update, delete: if isSignedIn(); 
     }
 
     // User Profiles
@@ -41,13 +41,20 @@ service cloud.firestore {
     // Barbers
     match /barbers/{barberId} {
       allow get, list: if true; 
-      allow write, delete: if isSignedIn();
+      allow write, delete: if isAdmin();
     }
 
     // Services
     match /services/{serviceId} {
       allow get, list: if true;
-      allow write, delete: if isSignedIn();
+      allow write, delete: if isAdmin();
+    }
+
+    // Global Settings
+    match /settings/{settingId} {
+      allow get: if true;
+      allow list: if true;
+      allow write: if isAdmin();
     }
   }
 }

@@ -1,19 +1,37 @@
 
+"use client";
+
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Sparkles, Scissors, Clock } from "lucide-react";
+import { Sparkles, Scissors, Clock, Loader2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
+import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
+import { doc } from "firebase/firestore";
 
 export default function Home() {
-  const heroBg = PlaceHolderImages.find(img => img.id === "hero-bg");
-  const heroImg = PlaceHolderImages.find(img => img.id === "hero-barber");
-  const cta1 = PlaceHolderImages.find(img => img.id === "cta-haircut-1");
-  const cta2 = PlaceHolderImages.find(img => img.id === "cta-haircut-2");
-  const cta3 = PlaceHolderImages.find(img => img.id === "cta-haircut-3");
-  const cta4 = PlaceHolderImages.find(img => img.id === "cta-haircut-4");
+  const db = useFirestore();
+  const siteContentRef = useMemoFirebase(() => {
+    if (!db) return null;
+    return doc(db, "settings", "site-content");
+  }, [db]);
+
+  const { data: siteContent, isLoading: contentLoading } = useDoc(siteContentRef);
+
+  // Стандартные фото как фолбэк
+  const defaultHeroBg = PlaceHolderImages.find(img => img.id === "hero-bg")?.imageUrl;
+  const defaultCta1 = PlaceHolderImages.find(img => img.id === "cta-haircut-1")?.imageUrl;
+  const defaultCta2 = PlaceHolderImages.find(img => img.id === "cta-haircut-2")?.imageUrl;
+  const defaultCta3 = PlaceHolderImages.find(img => img.id === "cta-haircut-3")?.imageUrl;
+  const defaultCta4 = PlaceHolderImages.find(img => img.id === "cta-haircut-4")?.imageUrl;
+
+  const heroBg = siteContent?.heroBgUrl || defaultHeroBg;
+  const cta1 = siteContent?.ctaImages?.[0] || defaultCta1;
+  const cta2 = siteContent?.ctaImages?.[1] || defaultCta2;
+  const cta3 = siteContent?.ctaImages?.[2] || defaultCta3;
+  const cta4 = siteContent?.ctaImages?.[3] || defaultCta4;
 
   return (
     <div className="min-h-screen bg-background relative">
@@ -23,18 +41,18 @@ export default function Home() {
         {/* Hero Section */}
         <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden min-h-[90vh] flex items-center">
           {/* Background Image with Overlay */}
-          {heroBg && (
-            <div className="absolute inset-0 -z-20">
-              <Image
-                src={heroBg.imageUrl}
+          <div className="absolute inset-0 -z-20">
+            {heroBg ? (
+               <Image
+                src={heroBg}
                 alt="Background"
                 fill
                 className="object-cover opacity-20 brightness-[0.3]"
                 priority
               />
-              <div className="absolute inset-0 bg-gradient-to-b from-background via-transparent to-background"></div>
-            </div>
-          )}
+            ) : <div className="absolute inset-0 bg-muted/20" />}
+            <div className="absolute inset-0 bg-gradient-to-b from-background via-transparent to-background"></div>
+          </div>
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
             <div className="flex flex-col lg:flex-row items-center gap-12">
@@ -61,28 +79,6 @@ export default function Home() {
                       ИИ-стилист
                     </Button>
                   </Link>
-                </div>
-              </div>
-              <div className="flex-1 relative hidden lg:block">
-                <div className="relative w-full aspect-square max-w-[550px] mx-auto">
-                  <div className="absolute inset-0 bg-accent rounded-[3rem] rotate-6 opacity-10 -z-10 animate-pulse"></div>
-                  <div className="absolute inset-0 bg-primary rounded-[3rem] -rotate-3 opacity-10 -z-10"></div>
-                  <div className="rounded-[2.5rem] overflow-hidden border-4 border-card/20 shadow-2xl relative w-full h-full backdrop-blur-sm">
-                    {heroImg?.imageUrl ? (
-                      <Image
-                        src={heroImg.imageUrl}
-                        alt={heroImg.description}
-                        fill
-                        className="object-cover"
-                        data-ai-hint={heroImg.imageHint}
-                        priority
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-muted flex items-center justify-center">
-                        <Scissors className="w-12 h-12 text-muted-foreground" />
-                      </div>
-                    )}
-                  </div>
                 </div>
               </div>
             </div>
@@ -157,24 +153,24 @@ export default function Home() {
                   <div className="space-y-6 pt-12">
                     {cta1 && (
                       <div className="rounded-3xl overflow-hidden aspect-square relative border-4 border-white/10 shadow-2xl transition-transform hover:scale-105 duration-500">
-                        <Image src={cta1.imageUrl} fill alt={cta1.description} className="object-cover" data-ai-hint={cta1.imageHint} />
+                        <Image src={cta1} fill alt="CTA Image 1" className="object-cover" />
                       </div>
                     )}
                     {cta2 && (
                       <div className="rounded-3xl overflow-hidden aspect-square relative border-4 border-white/10 shadow-2xl transition-transform hover:scale-105 duration-500">
-                        <Image src={cta2.imageUrl} fill alt={cta2.description} className="object-cover" data-ai-hint={cta2.imageHint} />
+                        <Image src={cta2} fill alt="CTA Image 2" className="object-cover" />
                       </div>
                     )}
                   </div>
                   <div className="space-y-6">
                     {cta3 && (
                       <div className="rounded-3xl overflow-hidden aspect-square relative border-4 border-white/10 shadow-2xl transition-transform hover:scale-105 duration-500">
-                        <Image src={cta3.imageUrl} fill alt={cta3.description} className="object-cover" data-ai-hint={cta3.imageHint} />
+                        <Image src={cta3} fill alt="CTA Image 3" className="object-cover" />
                       </div>
                     )}
                     {cta4 && (
                       <div className="rounded-3xl overflow-hidden aspect-square relative border-4 border-white/10 shadow-2xl transition-transform hover:scale-105 duration-500">
-                        <Image src={cta4.imageUrl} fill alt={cta4.description} className="object-cover" data-ai-hint={cta4.imageHint} />
+                        <Image src={cta4} fill alt="CTA Image 4" className="object-cover" />
                       </div>
                     )}
                   </div>

@@ -230,6 +230,17 @@
         "createdAt",
         "updatedAt"
       ]
+    },
+    "SiteSettings": {
+       "title": "SiteSettings",
+       "type": "object",
+       "properties": {
+          "heroBgUrl": { "type": "string" },
+          "ctaImages": {
+             "type": "array",
+             "items": { "type": "string" }
+          }
+       }
     }
   },
   "auth": {
@@ -257,7 +268,7 @@
           "schema": {
             "$ref": "#/backend/entities/Appointment"
           },
-          "description": "Stores scheduled appointments/bookings. Renamed from appointments to match app logic."
+          "description": "Stores scheduled appointments/bookings."
         }
       },
       {
@@ -268,6 +279,16 @@
             "$ref": "#/backend/entities/Barber"
           },
           "description": "Stores barber profiles."
+        }
+      },
+      {
+        "path": "/settings/{settingId}",
+        "definition": {
+          "entityName": "SiteSettings",
+          "schema": {
+             "$ref": "#/backend/entities/SiteSettings"
+          },
+          "description": "Global site settings (images, texts)."
         }
       },
       {
