@@ -2,7 +2,7 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Sparkles, Scissors, Clock, Calendar, ShieldCheck, UserCheck } from "lucide-react";
+import { Sparkles, Scissors, Clock } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
