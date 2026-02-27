@@ -156,7 +156,7 @@ export default function VisualizerPage() {
                   />
                   {photo ? (
                     <div className="relative aspect-square w-full rounded-lg overflow-hidden border border-border shadow-sm mx-auto">
-                       <Image src={photo} alt="Preview" fill className="object-cover" />
+                       <Image src={photo} alt="Превью" fill className="object-cover" />
                     </div>
                   ) : (
                     <div className="flex flex-col items-center gap-2 py-4">
@@ -167,7 +167,7 @@ export default function VisualizerPage() {
                   )}
                 </div>
                 <Button variant="outline" className="w-full text-xs h-9 border-dashed" onClick={useSamplePhoto}>
-                  <ImageIcon className="w-3.5 h-3.5 mr-2" /> Использовать Sample Photo
+                  <ImageIcon className="w-3.5 h-3.5 mr-2" /> Использовать пример фото
                 </Button>
               </CardContent>
             </Card>
@@ -222,7 +222,7 @@ export default function VisualizerPage() {
                     </div>
                   ) : generatedImage ? (
                     <div className="relative w-full h-full max-w-lg aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl">
-                       <Image src={generatedImage} alt="AI Result" fill className="object-cover" />
+                       <Image src={generatedImage} alt="Результат ИИ" fill className="object-cover" />
                        <div className="absolute bottom-4 left-4 right-4 bg-black/60 backdrop-blur-md p-3 rounded-xl text-white text-xs text-center">
                          Образ: {customStyle || selectedStyle}
                        </div>
