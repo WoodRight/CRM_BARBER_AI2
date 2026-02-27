@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -22,6 +21,7 @@ import {
   Briefcase
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 const MOCK_BOOKINGS = [
   { id: "BK-001", client: "John Doe", service: "Signature Haircut", barber: "Alex Rivers", date: "2024-05-20", time: "10:00 AM", status: "Confirmed", total: "$45" },
