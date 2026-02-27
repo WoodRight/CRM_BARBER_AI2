@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef } from "react";
@@ -40,7 +39,6 @@ const BARBERS = [
   { id: 2, name: "Сара Чен", role: "Старший стилист", img: "https://picsum.photos/seed/sarah/100/100" },
 ];
 
-// Расширенное расписание
 const TIME_SLOTS = [
   "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
   "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
@@ -80,10 +78,6 @@ export default function BookingPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast({ variant: "destructive", title: "Файл слишком большой", description: "Максимальный размер 5 МБ." });
-        return;
-      }
       const reader = new FileReader();
       reader.onloadend = () => {
         setPhoto(reader.result as string);
@@ -234,13 +228,13 @@ export default function BookingPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                <div className="space-y-4">
                  <p className="text-sm font-medium text-muted-foreground flex items-center gap-2"><ImageIcon className="w-4 h-4" /> Выберите дату</p>
-                 <div className="border rounded-2xl p-4 bg-card shadow-sm inline-block w-full">
+                 <div className="border rounded-2xl p-2 bg-card shadow-sm">
                     <Calendar 
                       mode="single" 
                       selected={date} 
                       onSelect={(newDate) => setDate(newDate || date)} 
                       locale={ru}
-                      className="rounded-md" 
+                      className="rounded-md mx-auto" 
                     />
                  </div>
                </div>
