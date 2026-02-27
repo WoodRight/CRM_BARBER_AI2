@@ -12,12 +12,12 @@ const AiHairstyleTryOnInputSchema = z.object({
   photoDataUri: z
     .string()
     .describe(
-      "Фотография клиента в виде data URI или URL-ссылки."
+      "Фотография клиента в виде data URI. Формат: 'data:<mimetype>;base64,<encoded_data>'."
     ),
   hairstyleDescription: z
     .string()
     .describe(
-      'Описание желаемой прически.'
+      'Описание желаемой прически (на английском для лучшего результата).'
     ),
 });
 export type AiHairstyleTryOnInput = z.infer<typeof AiHairstyleTryOnInputSchema>;
@@ -43,9 +43,8 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
   },
   async (input) => {
     let finalPhotoUri = input.photoDataUri.trim();
-    let detectedMimeType = 'image/jpeg';
 
-    // Серверная загрузка для обхода CORS и оптимизации
+    // Если это URL, скачиваем его и превращаем в чистый Base64 на сервере
     if (finalPhotoUri.startsWith('http')) {
       try {
         const response = await fetch(finalPhotoUri, {
@@ -57,38 +56,27 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
         
         const arrayBuffer = await response.arrayBuffer();
         const contentType = response.headers.get('content-type')?.split(';')[0] || 'image/jpeg';
-        detectedMimeType = contentType;
         const base64 = Buffer.from(arrayBuffer).toString('base64');
         finalPhotoUri = `data:${contentType};base64,${base64}`;
       } catch (error: any) {
-        throw new Error(`Не удалось загрузить фото: ${error.message}`);
+        throw new Error(`Ошибка загрузки: ${error.message}`);
       }
-    } else if (finalPhotoUri.startsWith('data:')) {
-      const match = finalPhotoUri.match(/^data:([^;]+);/);
-      if (match) detectedMimeType = match[1];
     }
 
     try {
+      // Прямой вызов модели для редактирования изображения
       const response = await ai.generate({
         model: 'googleai/gemini-2.5-flash-image',
         prompt: [
-          { 
-            media: { 
-              url: finalPhotoUri,
-              contentType: detectedMimeType
-            } 
-          },
-          {
-            text: `Hairstyle edit: ${input.hairstyleDescription}. Keep original person's face identical.`
-          },
+          { media: { url: finalPhotoUri } },
+          { text: `Modify the hairstyle of the person in the photo. Style: ${input.hairstyleDescription}. Keep the face, background and clothing exactly the same.` }
         ],
         config: {
           responseModalities: ['TEXT', 'IMAGE'],
+          // Минимальные настройки безопасности для стабильности
           safetySettings: [
-            { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
             { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
             { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
-            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
           ],
         },
       });
@@ -96,23 +84,23 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
       const media = response.media;
 
       if (!media || !media.url) {
-        throw new Error('ИИ не вернул изображение. Пожалуйста, попробуйте еще раз или выберите другой стиль.');
+        throw new Error('ИИ не вернул изображение. Попробуйте использовать более простое описание прически.');
       }
 
       return { generatedHairstyleImage: media.url };
     } catch (error: any) {
+      console.error('Genkit Error:', error);
       const errMsg = error.message || '';
-      console.error('Gemini AI Error Details:', error);
       
       if (errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED')) {
-        throw new Error('Лимит запросов исчерпан. Пожалуйста, подождите 60 секунд.');
+        throw new Error('Лимит запросов исчерпан. Пожалуйста, подождите 60 секунд перед следующей попыткой.');
       }
 
       if (errMsg.includes('400') || errMsg.includes('invalid_argument')) {
-        throw new Error('Ошибка параметров: попробуйте использовать скриншот фото или нажмите "Использовать пример".');
+        throw new Error('Ошибка параметров: Попробуйте загрузить скриншот фото (он весит меньше) или используйте демо-фото.');
       }
       
-      throw new Error(`Ошибка ИИ: ${errMsg}`);
+      throw new Error(`Ошибка генерации: ${errMsg}`);
     }
   }
 );
