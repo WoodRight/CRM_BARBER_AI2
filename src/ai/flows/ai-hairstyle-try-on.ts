@@ -53,18 +53,41 @@ const aiHairstyleTryOnFlow = ai.defineFlow(
         { media: { url: input.photoDataUri } },
         {
           text:
-            `Примени следующую прическу к человеку на предоставленном фото: ${input.hairstyleDescription}. ` +
-            `Новая прическа должна выглядеть естественно, учитывая форму головы человека, черты лица и тон кожи. ` +
-            `Сохраняй освещение и качество изображения как на оригинальном фото.`,
+            `Please modify the hair of the person in this photo. Apply the following hairstyle: ${input.hairstyleDescription}. ` +
+            `The new hairstyle must look natural, blending perfectly with the person's head shape, facial features, and skin tone. ` +
+            `Keep the background, lighting, and overall image quality exactly as they are in the original photo. ` +
+            `Return ONLY the modified image.`,
         },
       ],
       config: {
         responseModalities: ['TEXT', 'IMAGE'],
+        safetySettings: [
+          {
+            category: 'HARM_CATEGORY_HATE_SPEECH',
+            threshold: 'BLOCK_NONE',
+          },
+          {
+            category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+            threshold: 'BLOCK_NONE',
+          },
+          {
+            category: 'HARM_CATEGORY_HARASSMENT',
+            threshold: 'BLOCK_NONE',
+          },
+          {
+            category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+            threshold: 'BLOCK_NONE',
+          },
+          {
+            category: 'HARM_CATEGORY_CIVIC_INTEGRITY',
+            threshold: 'BLOCK_NONE',
+          },
+        ],
       },
     });
 
     if (!media || !media.url) {
-      throw new Error('Не удалось сгенерировать изображение прически.');
+      throw new Error('Не удалось сгенерировать изображение прически. Попробуйте другое фото или описание.');
     }
 
     return { generatedHairstyleImage: media.url };
