@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Progress } from "@/components/ui/progress";
@@ -88,7 +89,7 @@ export default function BookingPage() {
     
     try {
       await addDoc(collection(db, "bookings"), {
-        clientName: "Гость", // В реальном приложении здесь было бы имя из формы
+        clientName: "Гость", 
         serviceName: selectedService.name,
         barberName: selectedBarber.name,
         date: format(date!, "yyyy-MM-dd"),
@@ -96,7 +97,7 @@ export default function BookingPage() {
         status: "confirmed",
         totalPrice: selectedService.price,
         aiResultUrl: aiGeneratedImage || null,
-        createdAt: new Date().toISOString()
+        createdAt: serverTimestamp()
       });
       setStep(5);
       toast({ title: "Запись подтверждена!" });
