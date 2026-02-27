@@ -29,6 +29,30 @@
       "description": "Пример мужского портрета для ИИ-примерки",
       "imageUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=512&h=512&auto=format&fit=crop",
       "imageHint": "man portrait"
+    },
+    {
+      "id": "cta-haircut-1",
+      "description": "Стильная стрижка 1",
+      "imageUrl": "https://images.unsplash.com/photo-1503910368127-b459c72b3593?q=80&w=300&h=300&auto=format&fit=crop",
+      "imageHint": "haircut style"
+    },
+    {
+      "id": "cta-haircut-2",
+      "description": "Стильная стрижка 2",
+      "imageUrl": "https://images.unsplash.com/photo-1621605815841-28d645d5af9a?q=80&w=300&h=300&auto=format&fit=crop",
+      "imageHint": "barber scissors"
+    },
+    {
+      "id": "cta-haircut-3",
+      "description": "Стильная стрижка 3",
+      "imageUrl": "https://images.unsplash.com/photo-1605497746444-1ae0733b0042?q=80&w=300&h=300&auto=format&fit=crop",
+      "imageHint": "men style"
+    },
+    {
+      "id": "cta-haircut-4",
+      "description": "Инструменты барбера",
+      "imageUrl": "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?q=80&w=300&h=300&auto=format&fit=crop",
+      "imageHint": "barber shop"
     }
   ]
 }
