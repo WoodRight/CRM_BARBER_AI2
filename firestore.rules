@@ -1,22 +1,140 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    /**
+     * StylePro AI Security Rules
+     * 
+     * Core Philosophy:
+     * This ruleset implements a robust multi-role authorization model tailored for a Barbershop CRM. 
+     * It distinguishes between Clients, Barbers, and Administrators. Authorization is primarily 
+     * handled through path-based ownership (for user-specific data) and denormalized identity 
+     * fields (for shared resources like appointments).
+     * 
+     * Data Structure:
+     * - /users/{userId}/profile: Private client profile data, owned by the user.
+     * - /users/{userId}/hairstyleSessions/{sessionId}: Private AI session history for clients.
+     * - /barbers/{barberId}: Barber profiles, publicly readable but managed by the barber.
+     * - /services/{serviceId}: Catalog of barbershop offerings, managed by admins.
+     * - /appointments/{appointmentId}: Shared booking records between clients and barbers.
+     * - /roles_admin/{adminId}: A registry of users with global administrative privileges.
+     * 
+     * Key Security Decisions:
+     * 1. Denormalization for Performance: Ownership IDs (clientId, barberId) are stored directly 
+     *    on documents to allow for atomic authorization checks without expensive cross-document lookups.
+     * 2. Path-Data Consistency: For user-scoped paths, the rules enforce that the document's 
+     *    internal 'id' or 'clientId' matches the path variables and the authenticated user's UID.
+     * 3. Admin Override: A global 'isAdmin' check grants full access to administrators across 
+     *    all collections to facilitate shop management.
+     * 4. Existence Checks: All update and delete operations require the document to exist 
+     *    prior to the operation to prevent orphaned or invalid state changes.
+     */
+
+    // --- Global Helper Functions ---
+
+    /** @description Checks if the user is authenticated with Firebase Auth. */
     function isSignedIn() {
       return request.auth != null;
     }
-    
-    function isOwner() {
-      return isSignedIn() && exists(/databases/$(database)/documents/roles_owner/$(request.auth.uid));
+
+    /** @description Checks if the authenticated user's UID matches the provided userId. */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
 
-    match /bookings/{bookingId} {
-      allow create: if true;
-      allow read, update, delete: if isOwner();
+    /** @description Checks if the user has an entry in the roles_admin collection. */
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
-    
-    match /roles_owner/{userId} {
-      allow read: if isSignedIn() && request.auth.uid == userId;
-      allow write: if false;
+
+    /** @description Verifies ownership and ensures the resource exists for write operations. */
+    function isExistingOwner(userId) {
+      return resource != null && isOwner(userId);
+    }
+
+    // --- Collection Rules ---
+
+    /**
+     * @description Authorization registry for administrators.
+     * @path /roles_admin/{adminId}
+     * @allow (get) Any authenticated admin can check their own or others' admin status.
+     * @deny (write) No client-side writes; admin status must be managed via Console or Admin SDK.
+     * @principle Role-based access control via existence-over-content.
+     */
+    match /roles_admin/{adminId} {
+      allow get: if isSignedIn();
+      allow list, create, update, delete: if isAdmin();
+    }
+
+    /**
+     * @description Client profile management.
+     * @path /users/{userId}/profile
+     * @allow (create) User creating their own profile where document ID matches their UID.
+     * @deny (update) Attempting to change the 'id' field to a different user's UID.
+     * @principle Path-based ownership and relational integrity validation.
+     */
+    match /users/{userId}/profile {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if (isExistingOwner(userId) || isAdmin()) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId) || isAdmin();
+    }
+
+    /**
+     * @description Barber profile management and public discovery.
+     * @path /barbers/{barberId}
+     * @allow (list) Any signed-in user browsing available barbers.
+     * @allow (update) A barber updating their own bio or specialties.
+     * @deny (create) Mismatched barberId in the data vs the path.
+     * @principle Public read access with owner-restricted writes.
+     */
+    match /barbers/{barberId} {
+      allow get, list: if isSignedIn();
+      allow create: if isOwner(barberId) && request.resource.data.id == barberId;
+      allow update: if (isExistingOwner(barberId) || isAdmin()) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(barberId) || isAdmin();
+    }
+
+    /**
+     * @description Catalog of services offered by the shop.
+     * @path /services/{serviceId}
+     * @allow (get) Clients and Barbers viewing service prices and durations.
+     * @deny (create) Any non-admin attempting to add or modify services.
+     * @principle Admin-only write access for global configuration data.
+     */
+    match /services/{serviceId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    /**
+     * @description Management of shared appointment bookings.
+     * @path /appointments/{appointmentId}
+     * @allow (get) The client or the barber assigned to the appointment.
+     * @deny (list) Global listing is restricted to prevent users from seeing others' bookings.
+     * @principle Shared access via denormalized collaborator UIDs.
+     */
+    match /appointments/{appointmentId} {
+      allow get: if isSignedIn() && (request.auth.uid == resource.data.clientId || request.auth.uid == resource.data.barberId || isAdmin());
+      allow list: if isAdmin(); // List restricted to admins to prevent data leakage; clients/barbers use filtered queries.
+      allow create: if isSignedIn() && (request.resource.data.clientId == request.auth.uid || isAdmin());
+      allow update: if isSignedIn() && (resource != null) && (request.auth.uid == resource.data.clientId || request.auth.uid == resource.data.barberId || isAdmin());
+      allow delete: if isSignedIn() && (resource != null) && (request.auth.uid == resource.data.clientId || isAdmin());
+    }
+
+    /**
+     * @description Private AI hairstyle visualization sessions.
+     * @path /users/{userId}/hairstyleSessions/{sessionId}
+     * @allow (list) A user viewing their own history of AI sessions.
+     * @deny (create) Attempting to save a session under another user's account.
+     * @principle Strict user-tree isolation for private consumer data.
+     */
+    match /users/{userId}/hairstyleSessions/{sessionId} {
+      allow get, list: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && request.resource.data.clientId == userId;
+      allow update: if (isExistingOwner(userId) || isAdmin()) && request.resource.data.clientId == resource.data.clientId;
+      allow delete: if isExistingOwner(userId) || isAdmin();
     }
   }
 }

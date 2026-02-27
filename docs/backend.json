@@ -1,34 +1,390 @@
 {
   "entities": {
-    "Booking": {
-      "title": "Booking",
-      "description": "Запись клиента на услугу в барбершоп.",
+    "Client": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Client",
       "type": "object",
+      "description": "Represents a client of the barbershop, storing their personal details and contact information for CRM and booking purposes.",
       "properties": {
-        "clientName": { "type": "string", "description": "Имя клиента" },
-        "serviceName": { "type": "string", "description": "Название выбранной услуги" },
-        "barberName": { "type": "string", "description": "Имя выбранного мастера" },
-        "date": { "type": "string", "format": "date", "description": "Дата визита" },
-        "time": { "type": "string", "description": "Время визита" },
-        "status": { "type": "string", "enum": ["confirmed", "cancelled", "completed"], "description": "Статус записи" },
-        "totalPrice": { "type": "number", "description": "Стоимость услуги" },
-        "aiResultUrl": { "type": "string", "format": "uri", "description": "Ссылка на результат ИИ-примерки" },
-        "createdAt": { "type": "string", "format": "date-time", "description": "Время создания записи" }
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Client entity."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The first name of the client."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The last name of the client."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the client.",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string",
+          "description": "The phone number of the client."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Internal notes about the client, e.g., preferences, for CRM purposes."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "The timestamp when the client record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "The timestamp when the client record was last updated.",
+          "format": "date-time"
+        }
       },
-      "required": ["clientName", "serviceName", "barberName", "date", "time", "status", "totalPrice", "createdAt"]
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "email",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Barber": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Barber",
+      "type": "object",
+      "description": "Represents a barber working at the barbershop, including their profile, specialty, and availability for appointments.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Barber entity."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The first name of the barber."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The last name of the barber."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the barber.",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string",
+          "description": "The phone number of the barber."
+        },
+        "bio": {
+          "type": "string",
+          "description": "A short biographical description of the barber, highlighting their style or experience."
+        },
+        "specialties": {
+          "type": "array",
+          "description": "A list of services or styles the barber specializes in.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "profileImageUrl": {
+          "type": "string",
+          "description": "URL to the barber's profile picture.",
+          "format": "uri"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "The timestamp when the barber record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "The timestamp when the barber record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "email",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Service": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Service",
+      "type": "object",
+      "description": "Defines a specific service offered by the barbershop, including its name, description, pricing, and duration.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Service entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the service (e.g., 'Men's Haircut', 'Beard Trim')."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of what the service entails."
+        },
+        "price": {
+          "type": "number",
+          "description": "The monetary cost of the service."
+        },
+        "durationMinutes": {
+          "type": "number",
+          "description": "The estimated duration of the service in minutes."
+        },
+        "availableBarberIds": {
+          "type": "array",
+          "description": "References to Barbers who offer this service. (Relationship: Barber N:N Service)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "The timestamp when the service record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "The timestamp when the service record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "price",
+        "durationMinutes",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Appointment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Appointment",
+      "type": "object",
+      "description": "Represents a scheduled booking for a client with a specific barber for a particular service at a given time.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Appointment entity."
+        },
+        "clientId": {
+          "type": "string",
+          "description": "Reference to Client who booked the appointment. (Relationship: Client 1:N Appointment)"
+        },
+        "barberId": {
+          "type": "string",
+          "description": "Reference to Barber providing the service. (Relationship: Barber 1:N Appointment)"
+        },
+        "serviceId": {
+          "type": "string",
+          "description": "Reference to Service being performed during the appointment. (Relationship: Service 1:N Appointment)"
+        },
+        "startTime": {
+          "type": "string",
+          "description": "The scheduled start date and time of the appointment.",
+          "format": "date-time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "The scheduled end date and time of the appointment.",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the appointment (e.g., 'booked', 'confirmed', 'completed', 'cancelled', 'no-show')."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Any specific notes or requests related to this particular appointment."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "The timestamp when the appointment record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "The timestamp when the appointment record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "clientId",
+        "barberId",
+        "serviceId",
+        "startTime",
+        "endTime",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "HairstyleSession": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "HairstyleSession",
+      "type": "object",
+      "description": "Stores the details of a client's AI hairstyle visualization session, including the original uploaded image and the AI-generated results.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the HairstyleSession entity."
+        },
+        "clientId": {
+          "type": "string",
+          "description": "Reference to Client who initiated the AI hairstyle session. (Relationship: Client 1:N HairstyleSession)"
+        },
+        "uploadedImageUrl": {
+          "type": "string",
+          "description": "URL to the client's original uploaded photo for hairstyle visualization.",
+          "format": "uri"
+        },
+        "generatedHairstyleUrls": {
+          "type": "array",
+          "description": "An array of URLs to the AI-generated hairstyle images.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "selectedHairstyleUrl": {
+          "type": "string",
+          "description": "URL to the specific AI-generated hairstyle image that the client liked or saved, if any.",
+          "format": "uri"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "The timestamp when the hairstyle session record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "The timestamp when the hairstyle session record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "clientId",
+        "uploadedImageUrl",
+        "generatedHairstyleUrls",
+        "createdAt",
+        "updatedAt"
+      ]
     }
   },
   "auth": {
-    "providers": ["password"]
+    "providers": [
+      "password",
+      "anonymous"
+    ]
   },
   "firestore": {
-    "/bookings/{bookingId}": {
-      "schema": { "$ref": "#/entities/Booking" },
-      "description": "Коллекция всех записей в барбершоп."
-    },
-    "/roles_owner/{userId}": {
-      "schema": { "type": "object", "properties": { "isActive": { "type": "boolean" } } },
-      "description": "Роли администраторов системы."
-    }
+    "structure": [
+      {
+        "path": "/users/{userId}/profile",
+        "definition": {
+          "entityName": "Client",
+          "schema": {
+            "$ref": "#/backend/entities/Client"
+          },
+          "description": "Stores the Client entity data for a specific user. The 'id' field within the Client document must match the '{userId}' from the path, which corresponds to the Firebase Authentication UID of the client. This includes denormalized 'id' (Firebase UID) for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Authentication UID of the client."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/barbers/{barberId}",
+        "definition": {
+          "entityName": "Barber",
+          "schema": {
+            "$ref": "#/backend/entities/Barber"
+          },
+          "description": "Stores the Barber entity data. The 'id' field within the Barber document must match the '{barberId}' from the path, which corresponds to the Firebase Authentication UID of the barber, allowing self-management. This collection is publicly readable for appointment booking and allows write operations by the barber (owner) and administrators. Includes denormalized 'id' (Firebase UID) for authorization independence.",
+          "params": [
+            {
+              "name": "barberId",
+              "description": "The Firebase Authentication UID of the barber."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/services/{serviceId}",
+        "definition": {
+          "entityName": "Service",
+          "schema": {
+            "$ref": "#/backend/entities/Service"
+          },
+          "description": "Stores details of all barbershop services. This collection is publicly readable for clients to browse, but only accessible for write operations by administrators.",
+          "params": [
+            {
+              "name": "serviceId",
+              "description": "Unique identifier for the service."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/appointments/{appointmentId}",
+        "definition": {
+          "entityName": "Appointment",
+          "schema": {
+            "$ref": "#/backend/entities/Appointment"
+          },
+          "description": "Stores scheduled appointments. Access is authorized via the denormalized 'clientId' and 'barberId' fields within the document itself, allowing the respective client and barber to manage their own appointments. Administrators have global management access.",
+          "params": [
+            {
+              "name": "appointmentId",
+              "description": "Unique identifier for the appointment."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/hairstyleSessions/{sessionId}",
+        "definition": {
+          "entityName": "HairstyleSession",
+          "schema": {
+            "$ref": "#/backend/entities/HairstyleSession"
+          },
+          "description": "Stores AI hairstyle visualization sessions for a specific client. The 'clientId' field within the HairstyleSession document must match the '{userId}' from the path. Access is private to the owning client, authorized via this matching 'clientId' and the authenticated user's UID.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Authentication UID of the client."
+            },
+            {
+              "name": "sessionId",
+              "description": "Unique identifier for the hairstyle visualization session."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admin/{adminId}",
+        "definition": {
+          "entityName": "Client",
+          "schema": {
+            "$ref": "#/backend/entities/Client"
+          },
+          "description": "Collection for defining administrator roles. The presence of a document at `/roles_admin/{adminId}` signifies that the 'adminId' (Firebase UID) has administrative privileges. This uses 'existence over content' for role management. The schema refers to the 'Client' entity as a generic user profile for structural compliance."
+        }
+      }
+    ],
+    "reasoning": "The recommended Firestore structure for StylePro AI prioritizes security, scalability, and debuggability by adhering to the core design principles and mandates. \n\n**Authorization Independence via Denormalization:**\n*   **Client Profiles (`/users/{userId}/profile`):** The `Client` entity is stored in a path-based ownership structure where the `{userId}` wildcard explicitly matches `request.auth.uid`. The `id` field within the `Client` document will also store this `userId`, providing a denormalized ownership reference for robust and easily debuggable security rules without `get()` calls. This allows a client to manage their own profile atomically.\n*   **Barber Profiles (`/barbers/{barberId}`):** Similar to client profiles, the `Barber` entity path `{barberId}` matches the barber's Firebase UID. The `id` field within the `Barber` document will contain this `barberId`. This enables a barber to manage their own profile directly via `request.auth.uid == barberId` or `request.auth.uid == resource.data.id`. Additionally, these profiles are publicly readable, and globally writable by administrators.\n*   **Appointments (`/appointments/{appointmentId}`):** The `Appointment` entity intrinsically contains `clientId` and `barberId` fields. These fields are critical for authorization, allowing the respective client, barber, or administrators to access their relevant appointments. Rules can directly check `request.auth.uid == resource.data.clientId` or `request.auth.uid == resource.data.barberId` without any `get()` operations, making access checks atomic and performant.\n*   **Hairstyle Sessions (`/users/{userId}/hairstyleSessions/{sessionId}`):** These sessions are tightly coupled to a specific client. The `clientId` field within the `HairstyleSession` document will match the `{userId}` in the path, which in turn matches `request.auth.uid`. This dual-check (`request.auth.uid == userId` and `resource.data.clientId == userId`) ensures strong authorization independence, preventing any `get()` calls.\n\n**QAPs (Query as Authorization Predicates):**\n*   **Client Self-Management:** Clients can query their own profile (`/users/$(request.auth.uid)/profile`) and hairstyle sessions (`/users/$(request.auth.uid)/hairstyleSessions`). The path structure inherently filters these documents to only those owned by the authenticated user, making rules simple (`allow read, write: if request.auth.uid == userId;`).\n*   **Appointment Management:** Clients can query `appointments` using `where('clientId', '==', request.auth.uid)`, and barbers can use `where('barberId', '==', request.auth.uid)`. The security rules will directly enforce `read: if resource.data.clientId == request.auth.uid || resource.data.barberId == request.auth.uid || isAdmin();`, aligning query predicates with authorization predicates.\n*   **Public Data:** Collections like `/barbers` and `/services` are designed for public readability. Queries to these collections (e.g., `db.collection('barbers').get()`) do not require additional filtering in rules beyond a general authentication check (`if request.auth != null;`), as all documents are intended to be public.\n*   **Admin Roles (`/roles_admin/{adminId}`):** Admin authorization is handled via 'existence over content' where `get(/roles_admin/$(request.auth.uid)).exists()` is used directly in rules. This provides a clear and efficient way to grant elevated privileges without custom claims or complex queries.\n\n**Structural Segregation & Access Modeling:**\n*   User-specific data (client profiles, hairstyle sessions) are segregated under `/users/{userId}`, clearly delineating ownership.\n*   Global entities (services) are in top-level collections (`/services`) with public read/admin write access.\n*   Collaborative entities (`/appointments`) are also top-level, leveraging denormalized fields for granular access control by multiple parties.\n*   Barber profiles are treated as public entities for browsing but privately managed by the barber themselves, facilitated by their UID matching the document ID.\n\nThis design minimizes rule complexity, enables efficient data retrieval, and ensures a secure foundation for the StylePro AI application."
   }
 }
