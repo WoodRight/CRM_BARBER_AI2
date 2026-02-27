@@ -1,24 +1,30 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/firebase";
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { useAuth, useUser } from "@/firebase";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { ShieldCheck, LogIn } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const auth = useAuth();
+  const { user, loading: authLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.push("/admin");
+    }
+  }, [user, authLoading, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,21 +34,23 @@ export default function AdminLoginPage() {
       await signInWithEmailAndPassword(auth, email, password);
       router.push("/admin");
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Ошибка входа", description: "Неверный email или пароль." });
+      toast({ 
+        variant: "destructive", 
+        title: "Ошибка входа", 
+        description: "Неверный email или пароль." 
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogleLogin = async () => {
-    if (!auth) return;
-    try {
-      await signInWithPopup(auth, new GoogleAuthProvider());
-      router.push("/admin");
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Ошибка", description: error.message });
-    }
-  };
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground animate-pulse">Загрузка...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -56,7 +64,7 @@ export default function AdminLoginPage() {
             <CardTitle className="text-2xl font-headline">Вход в <span className="text-primary">Панель</span></CardTitle>
             <CardDescription>Только для авторизованных сотрудников BarBerTok</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Input 
@@ -80,13 +88,6 @@ export default function AdminLoginPage() {
                 {loading ? "Вход..." : "Войти в систему"}
               </Button>
             </form>
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center"><span className="w-full border-t"></span></div>
-              <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">Или</span></div>
-            </div>
-            <Button variant="outline" className="w-full" onClick={handleGoogleLogin}>
-              Войти через Google
-            </Button>
           </CardContent>
         </Card>
       </main>
