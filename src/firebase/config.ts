@@ -1,12 +1,8 @@
-/**
- * Конфигурация Firebase.
- * Значения берутся из переменных окружения для безопасности.
- */
 export const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSy-dummy-key",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "barbertok.firebaseapp.com",
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "barbertok",
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "barbertok.firebasestorage.app",
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "123456789",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:123456789:web:abcdef",
+  "projectId": "studio-7836855314-29aec",
+  "appId": "1:60855381083:web:2b89808526bc2f4723237e",
+  "apiKey": "AIzaSyAQAXJeKJveQUj6xJ1-x9eTcTntm_vq9JM",
+  "authDomain": "studio-7836855314-29aec.firebaseapp.com",
+  "measurementId": "",
+  "messagingSenderId": "60855381083"
 };
