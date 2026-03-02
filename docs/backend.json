@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Client": {
@@ -41,7 +42,7 @@
       "description": "Admin roles for dashboard access."
     },
     "/bookings/{bookingId}": {
-      "schema": { "$ref": "#/entities/Booking" },
+      "schema": { "$ref": "#/backend/entities/Booking" },
       "description": "Public and admin managed appointments."
     },
     "/services/{serviceId}": {
@@ -49,8 +50,12 @@
       "description": "Barbershop services."
     },
     "/barbers/{barberId}": {
-      "schema": { "$ref": "#/entities/Barber" },
+      "schema": { "$ref": "#/backend/entities/Barber" },
       "description": "Barber profiles."
+    },
+    "/clients/{clientId}": {
+      "schema": { "$ref": "#/backend/entities/Client" },
+      "description": "Client database."
     }
   }
 }
