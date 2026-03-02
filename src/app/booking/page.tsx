@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Progress } from "@/components/ui/progress";
@@ -20,7 +21,10 @@ import {
   ArrowRight,
   ArrowLeft,
   Loader2,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  Phone,
+  Mail,
+  UserCircle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -53,6 +57,13 @@ export default function BookingPage() {
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // Данные клиента
+  const [clientInfo, setClientInfo] = useState({
+    name: "",
+    phone: "",
+    email: ""
+  });
+
   const [photo, setPhoto] = useState<string | null>(null);
   const [aiGeneratedImage, setAiGeneratedImage] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
@@ -80,6 +91,12 @@ export default function BookingPage() {
     if (step === 1 && !selectedService) return toast({ variant: "destructive", title: "Выберите услугу" });
     if (step === 3 && !selectedBarber) return toast({ variant: "destructive", title: "Выберите мастера" });
     if (step === 4 && (!date || !selectedTime)) return toast({ variant: "destructive", title: "Выберите дату и время" });
+    if (step === 5) {
+      if (!clientInfo.name.trim()) return toast({ variant: "destructive", title: "Введите ваше имя" });
+      if (!clientInfo.phone.trim()) return toast({ variant: "destructive", title: "Введите номер телефона" });
+      handleConfirm();
+      return;
+    }
     setStep(prev => prev + 1);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -321,30 +338,77 @@ export default function BookingPage() {
                  </ScrollArea>
                </div>
             </div>
-
-            {date && selectedTime && (
-              <div className="max-w-md mx-auto mt-12 animate-in fade-in zoom-in-95 duration-500">
-                <Card className="bg-primary/5 border-primary/20 rounded-[2rem] overflow-hidden">
-                  <CardContent className="p-6 flex flex-col items-center text-center gap-2">
-                    <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white mb-2 shadow-lg shadow-primary/20">
-                      <CheckCircle2 className="w-6 h-6" />
-                    </div>
-                    <h4 className="font-headline font-bold text-xl">Ваш выбор зафиксирован</h4>
-                    <p className="text-muted-foreground text-sm">
-                      Стрижка <span className="text-foreground font-bold">{selectedService?.name}</span> у мастера <span className="text-foreground font-bold">{selectedBarber?.name}</span>
-                    </p>
-                    <div className="mt-2 bg-background px-6 py-3 rounded-full border border-primary/10 shadow-sm">
-                       <span className="text-primary font-bold">{format(date, 'd MMMM, eeee', { locale: ru })}</span>
-                       <span className="mx-2 text-muted-foreground opacity-30">|</span>
-                       <span className="text-primary font-bold">{selectedTime}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
           </div>
         );
       case 5:
+        return (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+             <div className="text-center space-y-2">
+                <h2 className="text-3xl font-headline font-bold">Ваши контакты</h2>
+                <p className="text-muted-foreground">Оставьте данные, чтобы мы могли подтвердить запись</p>
+             </div>
+             
+             <Card className="max-w-xl mx-auto shadow-2xl border-primary/10 overflow-hidden rounded-[2.5rem]">
+               <CardContent className="p-8 space-y-6">
+                 <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name" className="flex items-center gap-2 text-sm font-bold ml-1">
+                        <UserCircle className="w-4 h-4 text-primary" /> Ваше имя
+                      </Label>
+                      <Input 
+                        id="name"
+                        placeholder="Александр" 
+                        value={clientInfo.name}
+                        onChange={e => setClientInfo({...clientInfo, name: e.target.value})}
+                        className="h-14 rounded-2xl border-muted bg-muted/20 focus:ring-primary"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="phone" className="flex items-center gap-2 text-sm font-bold ml-1">
+                        <Phone className="w-4 h-4 text-primary" /> Телефон
+                      </Label>
+                      <Input 
+                        id="phone"
+                        type="tel"
+                        placeholder="+7 (___) ___-__-__" 
+                        value={clientInfo.phone}
+                        onChange={e => setClientInfo({...clientInfo, phone: e.target.value})}
+                        className="h-14 rounded-2xl border-muted bg-muted/20 focus:ring-primary"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="flex items-center gap-2 text-sm font-bold ml-1">
+                        <Mail className="w-4 h-4 text-primary" /> Email (опционально)
+                      </Label>
+                      <Input 
+                        id="email"
+                        type="email"
+                        placeholder="mail@example.com" 
+                        value={clientInfo.email}
+                        onChange={e => setClientInfo({...clientInfo, email: e.target.value})}
+                        className="h-14 rounded-2xl border-muted bg-muted/20 focus:ring-primary"
+                      />
+                    </div>
+                 </div>
+
+                 <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10 space-y-2">
+                    <p className="text-xs font-bold text-primary uppercase tracking-wider">Резюме записи:</p>
+                    <div className="flex justify-between items-center text-sm">
+                       <span className="text-muted-foreground">{selectedService?.name}</span>
+                       <span className="font-bold">{selectedService?.price} ₽</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                       <span className="text-muted-foreground">{format(date!, 'd MMMM', { locale: ru })} в {selectedTime}</span>
+                       <span className="font-bold">{selectedBarber?.name}</span>
+                    </div>
+                 </div>
+               </CardContent>
+             </Card>
+          </div>
+        );
+      case 6:
         return (
           <div className="text-center py-16 px-6 bg-card rounded-[2rem] border border-border shadow-2xl animate-in zoom-in-95">
             <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -352,7 +416,7 @@ export default function BookingPage() {
             </div>
             <h2 className="text-4xl font-headline font-bold mb-4">Готово!</h2>
             <p className="text-muted-foreground text-lg mb-8 max-w-sm mx-auto">
-              Мы ждем вас <span className="text-foreground font-bold">{date && format(date, 'd MMMM', { locale: ru })}</span> в <span className="text-foreground font-bold">{selectedTime}</span>.
+              <span className="font-bold text-foreground">{clientInfo.name}</span>, мы ждем вас <span className="text-foreground font-bold">{date && format(date, 'd MMMM', { locale: ru })}</span> в <span className="text-foreground font-bold">{selectedTime}</span>.
             </p>
             <Link href="/"><Button className="rounded-full px-12 h-14 text-lg font-bold">Вернуться на главную</Button></Link>
           </div>
@@ -366,7 +430,9 @@ export default function BookingPage() {
     setIsSubmitting(true);
     try {
       await addDoc(collection(db, "bookings"), {
-        clientName: "Гость", 
+        clientName: clientInfo.name, 
+        clientPhone: clientInfo.phone,
+        clientEmail: clientInfo.email,
         serviceName: selectedService.name,
         barberName: selectedBarber.name,
         date: format(date, "yyyy-MM-dd"),
@@ -376,7 +442,7 @@ export default function BookingPage() {
         aiResultUrl: aiGeneratedImage || null,
         createdAt: serverTimestamp()
       });
-      setStep(5);
+      setStep(6);
       toast({ title: "Запись подтверждена!" });
     } catch (e: any) {
       toast({ variant: "destructive", title: "Ошибка", description: e.message });
@@ -389,13 +455,13 @@ export default function BookingPage() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="pt-24 pb-20 px-4 max-w-5xl mx-auto">
-        {step < 5 && (
+        {step < 6 && (
           <div className="mb-12">
             <div className="flex justify-between items-end mb-4">
-               <p className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em]">Шаг {step} из 4</p>
-               <p className="text-sm font-bold text-primary">{Math.round((step / 4) * 100)}%</p>
+               <p className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em]">Шаг {step} из 5</p>
+               <p className="text-sm font-bold text-primary">{Math.round((step / 5) * 100)}%</p>
             </div>
-            <Progress value={(step / 4) * 100} className="h-1.5" />
+            <Progress value={(step / 5) * 100} className="h-1.5" />
           </div>
         )}
         
@@ -403,7 +469,7 @@ export default function BookingPage() {
           {renderStep()}
         </div>
 
-        {step < 5 && (
+        {step < 6 && (
           <div className="mt-12 flex justify-between items-center border-t border-border pt-8">
             <Button 
               variant="ghost" 
@@ -413,7 +479,7 @@ export default function BookingPage() {
             >
               <ArrowLeft className="w-4 h-4 mr-2" /> Назад
             </Button>
-            {step < 4 ? (
+            {step < 5 ? (
               <Button 
                 className="rounded-full px-10 h-12 bg-primary hover:bg-primary/90 font-bold" 
                 onClick={handleNextStep}
@@ -423,8 +489,8 @@ export default function BookingPage() {
             ) : (
               <Button 
                 className="rounded-full px-12 h-14 bg-green-600 hover:bg-green-700 text-white font-bold text-lg shadow-lg shadow-green-500/20" 
-                onClick={handleConfirm} 
-                disabled={isSubmitting || !selectedTime}
+                onClick={handleNextStep} 
+                disabled={isSubmitting || !clientInfo.name || !clientInfo.phone}
               >
                 {isSubmitting ? <Loader2 className="animate-spin mr-2 w-5 h-5" /> : null}
                 {isSubmitting ? "Бронируем..." : "Подтвердить запись"}
