@@ -19,7 +19,8 @@ import {
   Clock,
   ArrowRight,
   ArrowLeft,
-  Loader2
+  Loader2,
+  Calendar as CalendarIcon
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -260,33 +261,57 @@ export default function BookingPage() {
         );
       case 4:
         return (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-headline font-bold">Дата и время</h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-               <div className="space-y-4">
-                 <p className="text-sm font-medium text-muted-foreground flex items-center gap-2 uppercase tracking-widest"><ImageIcon className="w-4 h-4" /> 1. Дата</p>
-                 <div className="border rounded-2xl p-4 bg-card shadow-sm">
+          <div className="space-y-8">
+            <h2 className="text-3xl font-headline font-bold text-center mb-8">Когда вам удобно?</h2>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+               <div className="lg:col-span-7 space-y-6">
+                 <div className="flex items-center gap-3 px-2">
+                    <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+                      <CalendarIcon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg">1. Выберите дату</h3>
+                      <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold">Доступно на 30 дней вперед</p>
+                    </div>
+                 </div>
+                 
+                 <div className="border border-border/60 rounded-[2rem] p-6 bg-card shadow-xl overflow-hidden relative group">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/50 via-primary to-primary/50"></div>
                     <Calendar 
                       mode="single" 
                       selected={date} 
                       onSelect={(newDate) => setDate(newDate || date)} 
                       locale={ru}
-                      className="rounded-md mx-auto" 
+                      disabled={{ before: new Date() }}
+                      className="rounded-md w-full flex justify-center scale-110 py-4" 
                     />
                  </div>
                </div>
-               <div className="space-y-4">
-                 <p className="text-sm font-medium text-muted-foreground flex items-center gap-2 uppercase tracking-widest"><Clock className="w-4 h-4" /> 2. Время</p>
-                 <ScrollArea className="h-[340px] pr-4 border rounded-2xl p-4 bg-muted/5">
-                   <div className="grid grid-cols-3 gap-2">
+
+               <div className="lg:col-span-5 space-y-6">
+                 <div className="flex items-center gap-3 px-2">
+                    <div className="w-10 h-10 bg-accent/10 rounded-xl flex items-center justify-center text-accent">
+                      <Clock className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg">2. Выберите время</h3>
+                      <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold">Рабочие часы: 09:00 - 20:00</p>
+                    </div>
+                 </div>
+
+                 <ScrollArea className="h-[420px] pr-4 border border-border/60 rounded-[2rem] p-6 bg-muted/5 shadow-inner">
+                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                      {TIME_SLOTS.map(t => (
                        <Button 
                         key={t} 
                         variant={selectedTime === t ? "default" : "outline"} 
                         onClick={() => setSelectedTime(t)} 
                         className={cn(
-                          "h-12 text-sm font-semibold rounded-xl transition-all", 
-                          selectedTime === t && "ring-2 ring-primary ring-offset-2"
+                          "h-14 text-sm font-bold rounded-2xl transition-all duration-300", 
+                          selectedTime === t 
+                            ? "bg-primary text-white shadow-lg shadow-primary/30 ring-2 ring-primary ring-offset-4 ring-offset-background" 
+                            : "bg-background hover:bg-muted hover:border-primary/50"
                         )}
                        >
                          {t}
@@ -294,15 +319,29 @@ export default function BookingPage() {
                      ))}
                    </div>
                  </ScrollArea>
-                 {selectedTime && (
-                   <div className="bg-primary/10 p-4 rounded-xl border border-primary/20 animate-in fade-in slide-in-from-top-2">
-                     <p className="text-sm text-primary font-bold text-center">
-                       {date && format(date, 'd MMMM', { locale: ru })} в {selectedTime}
-                     </p>
-                   </div>
-                 )}
                </div>
             </div>
+
+            {date && selectedTime && (
+              <div className="max-w-md mx-auto mt-12 animate-in fade-in zoom-in-95 duration-500">
+                <Card className="bg-primary/5 border-primary/20 rounded-[2rem] overflow-hidden">
+                  <CardContent className="p-6 flex flex-col items-center text-center gap-2">
+                    <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white mb-2 shadow-lg shadow-primary/20">
+                      <CheckCircle2 className="w-6 h-6" />
+                    </div>
+                    <h4 className="font-headline font-bold text-xl">Ваш выбор зафиксирован</h4>
+                    <p className="text-muted-foreground text-sm">
+                      Стрижка <span className="text-foreground font-bold">{selectedService?.name}</span> у мастера <span className="text-foreground font-bold">{selectedBarber?.name}</span>
+                    </p>
+                    <div className="mt-2 bg-background px-6 py-3 rounded-full border border-primary/10 shadow-sm">
+                       <span className="text-primary font-bold">{format(date, 'd MMMM, eeee', { locale: ru })}</span>
+                       <span className="mx-2 text-muted-foreground opacity-30">|</span>
+                       <span className="text-primary font-bold">{selectedTime}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </div>
         );
       case 5:
