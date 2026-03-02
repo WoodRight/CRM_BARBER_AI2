@@ -1,4 +1,3 @@
-
 {
   "placeholderImages": [
     {
@@ -16,13 +15,13 @@
     {
       "id": "cta-haircut-1",
       "description": "Современный текстурированный кроп",
-      "imageUrl": "https://images.unsplash.com/photo-1622286332618-f2802b997a3a?q=80&w=600&auto=format&fit=crop",
+      "imageUrl": "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?q=80&w=600&auto=format&fit=crop",
       "imageHint": "modern haircut"
     },
     {
       "id": "cta-haircut-2",
       "description": "Идеально оформленная борода",
-      "imageUrl": "https://images.unsplash.com/photo-1590540179852-2110a54f813a?q=80&w=600&auto=format&fit=crop",
+      "imageUrl": "https://images.unsplash.com/photo-1621605815971-fbc98d665033?q=80&w=600&auto=format&fit=crop",
       "imageHint": "beard style"
     },
     {
