@@ -18,19 +18,17 @@ import {
   Users, 
   Calendar, 
   Scissors, 
-  Settings, 
   LogOut,
   Plus,
   Trash2,
   Loader2,
-  Save,
   UserPlus,
   Star
 } from "lucide-react";
 import { signOut } from "firebase/auth";
 import { useAuth } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { addDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 export default function AdminDashboard() {
   const { user, isUserLoading } = useUser();
@@ -40,7 +38,6 @@ export default function AdminDashboard() {
   const { toast } = useToast();
   
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [isSavingContent, setIsSavingContent] = useState(false);
 
   // Состояния для форм
   const [newServiceName, setNewServiceName] = useState("");
@@ -181,10 +178,10 @@ export default function AdminDashboard() {
 
         <Tabs defaultValue="bookings" className="space-y-6">
           <TabsList className="bg-muted/50 p-1 rounded-xl w-full sm:w-auto border overflow-x-auto flex-nowrap">
-            <TabsTrigger value="bookings"><Calendar className="w-4 h-4 mr-2" /> Записи</TabsTrigger>
-            <TabsTrigger value="clients"><Users className="w-4 h-4 mr-2" /> Клиенты</TabsTrigger>
-            <TabsTrigger value="services"><Scissors className="w-4 h-4 mr-2" /> Услуги</TabsTrigger>
-            <TabsTrigger value="team"><Users className="w-4 h-4 mr-2" /> Команда</TabsTrigger>
+            <TabsTrigger value="bookings">Записи</TabsTrigger>
+            <TabsTrigger value="clients">Клиенты</TabsTrigger>
+            <TabsTrigger value="services">Услуги</TabsTrigger>
+            <TabsTrigger value="team">Команда</TabsTrigger>
           </TabsList>
 
           <TabsContent value="bookings">
