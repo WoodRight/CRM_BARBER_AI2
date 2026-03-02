@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -56,32 +57,34 @@ export default function AdminDashboard() {
   const [ctaImg3, setCtaImg3] = useState("");
   const [ctaImg4, setCtaImg4] = useState("");
 
-  // Мемоизированные запросы
+  // Мемоизированные запросы - запускаем СРАЗУ, если есть user.uid
+  // Безопасность обеспечивается правилами Firestore Security Rules
   const bookingsQuery = useMemoFirebase(() => {
-    if (!db || isAdmin === false) return null;
+    if (!db || !user) return null;
     return query(collection(db, "bookings"), orderBy("createdAt", "desc"), limit(50));
-  }, [db, isAdmin]);
+  }, [db, user?.uid]);
 
   const servicesQuery = useMemoFirebase(() => {
-    if (!db || isAdmin === false) return null;
+    if (!db || !user) return null;
     return query(collection(db, "services"), orderBy("createdAt", "desc"));
-  }, [db, isAdmin]);
+  }, [db, user?.uid]);
 
   const barbersQuery = useMemoFirebase(() => {
-    if (!db || isAdmin === false) return null;
+    if (!db || !user) return null;
     return query(collection(db, "barbers"), orderBy("createdAt", "desc"));
-  }, [db, isAdmin]);
+  }, [db, user?.uid]);
 
   const siteContentRef = useMemoFirebase(() => {
-    if (!db || isAdmin === false) return null;
+    if (!db || !user) return null;
     return doc(db, "settings", "site-content");
-  }, [db, isAdmin]);
+  }, [db, user?.uid]);
 
   const { data: bookings, isLoading: bookingsLoading } = useCollection(bookingsQuery);
   const { data: services, isLoading: servicesLoading } = useCollection(servicesQuery);
   const { data: barbers, isLoading: barbersLoading } = useCollection(barbersQuery);
   const { data: siteContent } = useDoc(siteContentRef);
 
+  // Проверка прав в фоне
   useEffect(() => {
     const verifyAdmin = async () => {
       if (!isUserLoading) {
@@ -97,7 +100,6 @@ export default function AdminDashboard() {
               router.push("/admin/login");
             }
           } catch (e) {
-            console.error("Verification error:", e);
             setIsAdmin(false);
           }
         }
@@ -198,10 +200,7 @@ export default function AdminDashboard() {
         { name: "Фирменная стрижка", price: 2500, durationMinutes: 45 },
         { name: "Стрижка и борода", price: 3500, durationMinutes: 75 },
         { name: "Моделирование бороды", price: 1500, durationMinutes: 30 },
-        { name: "Королевское бритье", price: 2000, durationMinutes: 45 },
-        { name: "Камуфляж седины", price: 1800, durationMinutes: 40 },
-        { name: "Детская стрижка", price: 1800, durationMinutes: 40 },
-        { name: "Отец + Сын (Комбо)", price: 3800, durationMinutes: 90 }
+        { name: "Королевское бритье", price: 2000, durationMinutes: 45 }
       ];
 
       for (const s of demoServices) {
@@ -211,18 +210,6 @@ export default function AdminDashboard() {
           updatedAt: serverTimestamp()
         });
       }
-      
-      await addDoc(collection(db, "barbers"), { 
-        name: "Алекс Риверс", 
-        firstName: "Алекс",
-        lastName: "Риверс",
-        email: "alex@barbertok.ru",
-        role: "Топ-барбер", 
-        rating: 4.9, 
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
-
       toast({ title: "Демо-данные созданы!" });
     } catch (e: any) {
       toast({ variant: "destructive", title: "Ошибка", description: e.message });
@@ -231,7 +218,8 @@ export default function AdminDashboard() {
     }
   };
 
-  if (isUserLoading || isAdmin === null) {
+  // Показываем интерфейс сразу, если пользователь авторизован
+  if (isUserLoading || (!user && isAdmin === null)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -268,7 +256,7 @@ export default function AdminDashboard() {
             <TabsTrigger value="content"><Settings className="w-4 h-4 mr-2" /> Контент</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="bookings">
+          <TabsContent value="bookings" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
              <Card>
               <CardHeader>
                 <CardTitle>Последние записи</CardTitle>
@@ -276,9 +264,10 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 {bookingsLoading ? (
-                  <div className="space-y-2">
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-12 w-full" />
+                  <div className="space-y-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-24 w-full" />
+                    <Skeleton className="h-24 w-full" />
                   </div>
                 ) : (
                   <Table>
@@ -317,7 +306,7 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="services">
+          <TabsContent value="services" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <Card>
                 <CardHeader><CardTitle>Добавить услугу</CardTitle></CardHeader>
@@ -336,7 +325,10 @@ export default function AdminDashboard() {
               <Card className="lg:col-span-2">
                 <CardContent className="pt-6">
                   {servicesLoading ? (
-                    <div className="space-y-2"><Skeleton className="h-20 w-full" /></div>
+                    <div className="space-y-4">
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-40 w-full" />
+                    </div>
                   ) : (
                     <Table>
                       <TableHeader>
@@ -366,7 +358,7 @@ export default function AdminDashboard() {
             </div>
           </TabsContent>
 
-          <TabsContent value="team">
+          <TabsContent value="team" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                <Card>
                 <CardHeader><CardTitle>Новый мастер</CardTitle></CardHeader>
@@ -380,25 +372,27 @@ export default function AdminDashboard() {
               </Card>
               <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                 {barbersLoading ? (
-                  <Skeleton className="h-40 w-full" />
-                ) : barbers?.map((barber: any) => (
-                  <Card key={barber.id} className="hover:bg-accent/5 transition-colors">
-                    <CardContent className="p-6 flex items-center justify-between">
-                      <div>
-                        <h3 className="font-bold">{barber.name}</h3>
-                        <p className="text-xs text-muted-foreground">{barber.role}</p>
-                      </div>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete("barbers", barber.id)}>
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
+                  Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)
+                ) : (
+                  barbers?.map((barber: any) => (
+                    <Card key={barber.id} className="hover:bg-accent/5 transition-colors">
+                      <CardContent className="p-6 flex items-center justify-between">
+                        <div>
+                          <h3 className="font-bold">{barber.name}</h3>
+                          <p className="text-xs text-muted-foreground">{barber.role}</p>
+                        </div>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete("barbers", barber.id)}>
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
               </div>
             </div>
           </TabsContent>
 
-          <TabsContent value="content">
+          <TabsContent value="content" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             <Card>
               <CardHeader>
                 <CardTitle>Настройка изображений</CardTitle>
@@ -411,22 +405,16 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label>Блок ИИ: Фото 1</Label>
-                    <Input value={ctaImg1} onChange={e => setCtaImg1(e.target.value)} placeholder="URL фото" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Блок ИИ: Фото 2</Label>
-                    <Input value={ctaImg2} onChange={e => setCtaImg2(e.target.value)} placeholder="URL фото" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Блок ИИ: Фото 3</Label>
-                    <Input value={ctaImg3} onChange={e => setCtaImg3(e.target.value)} placeholder="URL фото" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Блок ИИ: Фото 4</Label>
-                    <Input value={ctaImg4} onChange={e => setCtaImg4(e.target.value)} placeholder="URL фото" />
-                  </div>
+                  {['Фото 1', 'Фото 2', 'Фото 3', 'Фото 4'].map((label, idx) => {
+                    const values = [ctaImg1, ctaImg2, ctaImg3, ctaImg4];
+                    const setters = [setCtaImg1, setCtaImg2, setCtaImg3, setCtaImg4];
+                    return (
+                      <div key={idx} className="space-y-2">
+                        <Label>Блок ИИ: {label}</Label>
+                        <Input value={values[idx]} onChange={e => setters[idx](e.target.value)} placeholder="URL фото" />
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <Button className="w-full bg-green-600 hover:bg-green-700 h-12 text-white" onClick={handleSaveContent} disabled={isSavingContent}>
