@@ -18,7 +18,9 @@
       "properties": {
         "id": { "type": "string" },
         "name": { "type": "string" },
-        "role": { "type": "string" }
+        "role": { "type": "string", "enum": ["Топ-барбер", "Мастер", "Барбер"] },
+        "rating": { "type": "number" },
+        "reviewCount": { "type": "number" }
       }
     },
     "Booking": {
@@ -30,6 +32,18 @@
         "serviceName": { "type": "string" },
         "date": { "type": "string" },
         "time": { "type": "string" }
+      }
+    },
+    "Review": {
+      "title": "Review",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "barberId": { "type": "string" },
+        "clientName": { "type": "string" },
+        "rating": { "type": "number" },
+        "comment": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       }
     }
   },
@@ -52,6 +66,10 @@
     "/barbers/{barberId}": {
       "schema": { "$ref": "#/backend/entities/Barber" },
       "description": "Barber profiles."
+    },
+    "/barbers/{barberId}/reviews/{reviewId}": {
+      "schema": { "$ref": "#/backend/entities/Review" },
+      "description": "Reviews for a specific barber."
     },
     "/clients/{clientId}": {
       "schema": { "$ref": "#/backend/entities/Client" },
