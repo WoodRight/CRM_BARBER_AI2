@@ -14,6 +14,7 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'picsum.photos' },
       { protocol: 'https', hostname: 'ailab-result-rapidapi.oss-accelerate.aliyuncs.com' },
+      { protocol: 'https', hostname: 'share.google' },
     ],
   },
 };
