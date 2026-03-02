@@ -18,7 +18,8 @@ import {
   ImageIcon,
   Clock,
   ArrowRight,
-  ArrowLeft
+  ArrowLeft,
+  Loader2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
