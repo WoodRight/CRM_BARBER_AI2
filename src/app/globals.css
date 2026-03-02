@@ -24,7 +24,7 @@
     --border: 264 10% 88%;
     --input: 264 10% 88%;
     --ring: 262 43% 47%;
-    --radius: 0.75rem;
+    --radius: 1rem;
   }
 
   .dark {
@@ -56,5 +56,15 @@
   }
   body {
     @apply bg-background text-foreground transition-colors duration-300;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 }

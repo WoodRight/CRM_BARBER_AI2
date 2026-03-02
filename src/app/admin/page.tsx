@@ -187,19 +187,19 @@ export default function AdminDashboard() {
         </div>
 
         <Tabs defaultValue="bookings" className="space-y-8">
-          <div className="flex justify-center sm:justify-start">
-            <TabsList className="bg-muted/30 p-1.5 rounded-2xl border border-border/50 backdrop-blur-md shadow-inner overflow-x-auto flex-nowrap scrollbar-hide">
-              <TabsTrigger value="bookings" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-300">
-                <Calendar className="w-4 h-4 mr-2" /> Записи
+          <div className="flex justify-center sm:justify-start overflow-hidden">
+            <TabsList className="bg-muted/20 p-2 rounded-[1.5rem] border border-border/40 backdrop-blur-xl shadow-2xl overflow-x-auto flex-nowrap scrollbar-hide">
+              <TabsTrigger value="bookings" className="rounded-2xl px-8 py-3 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/30 transition-all duration-500 hover:bg-primary/5">
+                <Calendar className="w-4 h-4 mr-3" /> Записи
               </TabsTrigger>
-              <TabsTrigger value="clients" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-300">
-                <Users className="w-4 h-4 mr-2" /> Клиенты
+              <TabsTrigger value="clients" className="rounded-2xl px-8 py-3 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/30 transition-all duration-500 hover:bg-primary/5">
+                <Users className="w-4 h-4 mr-3" /> Клиенты
               </TabsTrigger>
-              <TabsTrigger value="services" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-300">
-                <Scissors className="w-4 h-4 mr-2" /> Услуги
+              <TabsTrigger value="services" className="rounded-2xl px-8 py-3 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/30 transition-all duration-500 hover:bg-primary/5">
+                <Scissors className="w-4 h-4 mr-3" /> Услуги
               </TabsTrigger>
-              <TabsTrigger value="team" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-300">
-                <UserCircle className="w-4 h-4 mr-2" /> Команда
+              <TabsTrigger value="team" className="rounded-2xl px-8 py-3 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/30 transition-all duration-500 hover:bg-primary/5">
+                <UserCircle className="w-4 h-4 mr-3" /> Команда
               </TabsTrigger>
             </TabsList>
           </div>
