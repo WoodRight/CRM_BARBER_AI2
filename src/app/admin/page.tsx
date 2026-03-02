@@ -63,11 +63,18 @@ export default function AdminDashboard() {
   const [ctaImg4, setCtaImg4] = useState("");
 
   // Мемоизированные запросы для ускорения загрузки
+  // Защищенные запросы (только для админов)
   const bookingsQuery = useMemoFirebase(() => {
-    if (!db) return null;
+    if (!db || !isAdmin) return null;
     return query(collection(db, "bookings"), orderBy("createdAt", "desc"), limit(50));
-  }, [db]);
+  }, [db, isAdmin]);
 
+  const clientsQuery = useMemoFirebase(() => {
+    if (!db || !isAdmin) return null;
+    return query(collection(db, "clients"), orderBy("firstName", "asc"));
+  }, [db, isAdmin]);
+
+  // Публичные или полупубличные запросы
   const servicesQuery = useMemoFirebase(() => {
     if (!db) return null;
     return query(collection(db, "services"), orderBy("createdAt", "desc"));
@@ -76,11 +83,6 @@ export default function AdminDashboard() {
   const barbersQuery = useMemoFirebase(() => {
     if (!db) return null;
     return query(collection(db, "barbers"), orderBy("createdAt", "desc"));
-  }, [db]);
-
-  const clientsQuery = useMemoFirebase(() => {
-    if (!db) return null;
-    return query(collection(db, "clients"), orderBy("firstName", "asc"));
   }, [db]);
 
   const siteContentRef = useMemoFirebase(() => {
@@ -104,11 +106,16 @@ export default function AdminDashboard() {
 
     const verify = async () => {
       if (!db) return;
-      const adminSnap = await getDoc(doc(db, "roles_admin", user.uid));
-      if (!adminSnap.exists()) {
+      try {
+        const adminSnap = await getDoc(doc(db, "roles_admin", user.uid));
+        if (!adminSnap.exists()) {
+          router.push("/admin/login");
+        } else {
+          setIsAdmin(true);
+        }
+      } catch (e) {
+        console.error("Permission check failed", e);
         router.push("/admin/login");
-      } else {
-        setIsAdmin(true);
       }
     };
     verify();
