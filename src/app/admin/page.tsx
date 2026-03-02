@@ -4,7 +4,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
 import { useRouter } from "next/navigation";
-import { collection, query, orderBy, limit, addDoc, serverTimestamp, deleteDoc, doc, setDoc, getDoc } from "firebase/firestore";
+import { collection, query, orderBy, limit, serverTimestamp, doc, getDoc } from "firebase/firestore";
 import { Navbar } from "@/components/layout/Navbar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -21,7 +21,6 @@ import {
   LogOut,
   Plus,
   Trash2,
-  Database,
   Loader2,
   Save,
   UserPlus
@@ -39,7 +38,6 @@ export default function AdminDashboard() {
   const { toast } = useToast();
   
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [isSeeding, setIsSeeding] = useState(false);
   const [isSavingContent, setIsSavingContent] = useState(false);
 
   // Состояния для форм
@@ -47,7 +45,6 @@ export default function AdminDashboard() {
   const [newServicePrice, setNewServicePrice] = useState("");
   const [newBarberName, setNewBarberName] = useState("");
   
-  // Состояния для клиентов
   const [clientForm, setClientForm] = useState({
     firstName: "",
     lastName: "",
@@ -57,24 +54,43 @@ export default function AdminDashboard() {
 
   // Состояния для настроек контента
   const [heroBgUrl, setHeroBgUrl] = useState("");
-  const [ctaImg1, setCtaImg1] = useState("");
-  const [ctaImg2, setCtaImg2] = useState("");
-  const [ctaImg3, setCtaImg3] = useState("");
-  const [ctaImg4, setCtaImg4] = useState("");
+  const [ctaImages, setCtaImages] = useState(["", "", "", ""]);
 
-  // Мемоизированные запросы для ускорения загрузки
-  // Защищенные запросы (только для админов)
+  // Быстрая проверка прав администратора
+  useEffect(() => {
+    if (isUserLoading) return;
+    if (!user) {
+      router.push("/admin/login");
+      return;
+    }
+
+    const verify = async () => {
+      if (!db) return;
+      try {
+        const adminSnap = await getDoc(doc(db, "roles_admin", user.uid));
+        if (!adminSnap.exists()) {
+          router.push("/admin/login");
+        } else {
+          setIsAdmin(true);
+        }
+      } catch (e) {
+        router.push("/admin/login");
+      }
+    };
+    verify();
+  }, [user, isUserLoading, db, router]);
+
+  // Запросы данных (инициализируются сразу, чтобы не было задержек после подтверждения админа)
   const bookingsQuery = useMemoFirebase(() => {
-    if (!db || !isAdmin) return null;
+    if (!db || isAdmin === false) return null;
     return query(collection(db, "bookings"), orderBy("createdAt", "desc"), limit(50));
   }, [db, isAdmin]);
 
   const clientsQuery = useMemoFirebase(() => {
-    if (!db || !isAdmin) return null;
+    if (!db || isAdmin === false) return null;
     return query(collection(db, "clients"), orderBy("firstName", "asc"));
   }, [db, isAdmin]);
 
-  // Публичные или полупубличные запросы
   const servicesQuery = useMemoFirebase(() => {
     if (!db) return null;
     return query(collection(db, "services"), orderBy("createdAt", "desc"));
@@ -96,39 +112,12 @@ export default function AdminDashboard() {
   const { data: clients, isLoading: clientsLoading } = useCollection(clientsQuery);
   const { data: siteContent } = useDoc(siteContentRef);
 
-  // Быстрая проверка прав
-  useEffect(() => {
-    if (isUserLoading) return;
-    if (!user) {
-      router.push("/admin/login");
-      return;
-    }
-
-    const verify = async () => {
-      if (!db) return;
-      try {
-        const adminSnap = await getDoc(doc(db, "roles_admin", user.uid));
-        if (!adminSnap.exists()) {
-          router.push("/admin/login");
-        } else {
-          setIsAdmin(true);
-        }
-      } catch (e) {
-        console.error("Permission check failed", e);
-        router.push("/admin/login");
-      }
-    };
-    verify();
-  }, [user, isUserLoading, db, router]);
-
+  // Обновляем локальное состояние настроек при получении данных из Firestore
   useEffect(() => {
     if (siteContent) {
       setHeroBgUrl(siteContent.heroBgUrl || "");
       if (siteContent.ctaImages) {
-        setCtaImg1(siteContent.ctaImages[0] || "");
-        setCtaImg2(siteContent.ctaImages[1] || "");
-        setCtaImg3(siteContent.ctaImages[2] || "");
-        setCtaImg4(siteContent.ctaImages[3] || "");
+        setCtaImages(siteContent.ctaImages);
       }
     }
   }, [siteContent]);
@@ -145,7 +134,7 @@ export default function AdminDashboard() {
     setIsSavingContent(true);
     setDocumentNonBlocking(doc(db, "settings", "site-content"), {
       heroBgUrl,
-      ctaImages: [ctaImg1, ctaImg2, ctaImg3, ctaImg4],
+      ctaImages,
       updatedAt: serverTimestamp()
     }, { merge: true });
     
@@ -173,11 +162,7 @@ export default function AdminDashboard() {
     if (!db || !newBarberName) return;
     addDocumentNonBlocking(collection(db, "barbers"), {
       name: newBarberName,
-      firstName: newBarberName.split(' ')[0],
-      lastName: newBarberName.split(' ')[1] || "",
-      email: `${newBarberName.toLowerCase().replace(/\s+/g, '.')}@barbertok.ru`,
       role: "Мастер",
-      rating: 5.0,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
@@ -186,7 +171,7 @@ export default function AdminDashboard() {
   };
 
   const handleAddClient = () => {
-    if (!db || !clientForm.firstName || !clientForm.email) return;
+    if (!db || !clientForm.firstName) return;
     addDocumentNonBlocking(collection(db, "clients"), {
       ...clientForm,
       createdAt: serverTimestamp(),
@@ -215,25 +200,23 @@ export default function AdminDashboard() {
       <Navbar />
       
       <main className="pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 animate-in fade-in duration-500">
           <div>
             <h1 className="text-3xl font-headline font-bold">Панель <span className="text-accent">Администратора</span></h1>
-            <p className="text-muted-foreground">{user?.email}</p>
+            <p className="text-muted-foreground text-sm">{user?.email}</p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" className="rounded-full" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" /> Выйти
-            </Button>
-          </div>
+          <Button variant="outline" className="rounded-full h-11 px-6 active:scale-95 transition-transform" onClick={handleLogout}>
+            <LogOut className="w-4 h-4 mr-2" /> Выйти
+          </Button>
         </div>
 
         <Tabs defaultValue="bookings" className="space-y-6">
-          <TabsList className="bg-muted p-1 rounded-xl w-full sm:w-auto">
-            <TabsTrigger value="bookings"><Calendar className="w-4 h-4 mr-2" /> Записи</TabsTrigger>
-            <TabsTrigger value="clients"><Users className="w-4 h-4 mr-2" /> Клиенты</TabsTrigger>
-            <TabsTrigger value="services"><Scissors className="w-4 h-4 mr-2" /> Услуги</TabsTrigger>
-            <TabsTrigger value="team"><Users className="w-4 h-4 mr-2" /> Команда</TabsTrigger>
-            <TabsTrigger value="content"><Settings className="w-4 h-4 mr-2" /> Контент</TabsTrigger>
+          <TabsList className="bg-muted/50 p-1 rounded-xl w-full sm:w-auto border">
+            <TabsTrigger value="bookings" className="data-[state=active]:shadow-md transition-all"><Calendar className="w-4 h-4 mr-2" /> Записи</TabsTrigger>
+            <TabsTrigger value="clients" className="data-[state=active]:shadow-md transition-all"><Users className="w-4 h-4 mr-2" /> Клиенты</TabsTrigger>
+            <TabsTrigger value="services" className="data-[state=active]:shadow-md transition-all"><Scissors className="w-4 h-4 mr-2" /> Услуги</TabsTrigger>
+            <TabsTrigger value="team" className="data-[state=active]:shadow-md transition-all"><Users className="w-4 h-4 mr-2" /> Команда</TabsTrigger>
+            <TabsTrigger value="content" className="data-[state=active]:shadow-md transition-all"><Settings className="w-4 h-4 mr-2" /> Контент</TabsTrigger>
           </TabsList>
 
           <TabsContent value="bookings" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -244,10 +227,10 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 {bookingsLoading ? (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-24 w-full" />
-                    <Skeleton className="h-24 w-full" />
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-16 w-full" />
                   </div>
                 ) : (
                   <Table>
@@ -256,20 +239,18 @@ export default function AdminDashboard() {
                         <TableHead>Клиент</TableHead>
                         <TableHead>Услуга</TableHead>
                         <TableHead>Дата/Время</TableHead>
-                        <TableHead>Сумма</TableHead>
                         <TableHead className="text-right">Действие</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {bookings?.map((bk: any) => (
-                        <TableRow key={bk.id}>
+                        <TableRow key={bk.id} className="transition-colors hover:bg-muted/30">
                           <TableCell className="font-bold">{bk.clientName}</TableCell>
                           <TableCell>{bk.serviceName}</TableCell>
                           <TableCell>{bk.date} в {bk.time}</TableCell>
-                          <TableCell>{bk.totalPrice} ₽</TableCell>
                           <TableCell className="text-right">
-                             <Button variant="ghost" size="icon" onClick={() => handleDelete("bookings", bk.id)}>
-                               <Trash2 className="w-4 h-4 text-destructive" />
+                             <Button variant="ghost" size="icon" onClick={() => handleDelete("bookings", bk.id)} className="hover:text-destructive">
+                               <Trash2 className="w-4 h-4" />
                              </Button>
                           </TableCell>
                         </TableRow>
@@ -283,36 +264,27 @@ export default function AdminDashboard() {
 
           <TabsContent value="clients" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card>
+              <Card className="h-fit">
                 <CardHeader><CardTitle>Новый клиент</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label>Имя</Label>
-                    <Input value={clientForm.firstName} onChange={e => setClientForm({...clientForm, firstName: e.target.value})} placeholder="Иван" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Фамилия</Label>
-                    <Input value={clientForm.lastName} onChange={e => setClientForm({...clientForm, lastName: e.target.value})} placeholder="Иванов" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Email</Label>
-                    <Input type="email" value={clientForm.email} onChange={e => setClientForm({...clientForm, email: e.target.value})} placeholder="ivan@example.com" />
+                    <Input value={clientForm.firstName} onChange={e => setClientForm({...clientForm, firstName: e.target.value})} placeholder="Иван" className="h-11" />
                   </div>
                   <div className="space-y-2">
                     <Label>Телефон</Label>
-                    <Input value={clientForm.phone} onChange={e => setClientForm({...clientForm, phone: e.target.value})} placeholder="+7 (999) 000-00-00" />
+                    <Input value={clientForm.phone} onChange={e => setClientForm({...clientForm, phone: e.target.value})} placeholder="+7..." className="h-11" />
                   </div>
-                  <Button className="w-full" onClick={handleAddClient}><UserPlus className="w-4 h-4 mr-2" /> Добавить клиента</Button>
+                  <div className="space-y-2">
+                    <Label>Email</Label>
+                    <Input value={clientForm.email} onChange={e => setClientForm({...clientForm, email: e.target.value})} placeholder="mail@example.com" className="h-11" />
+                  </div>
+                  <Button className="w-full h-11 active:scale-95 transition-transform" onClick={handleAddClient}><UserPlus className="w-4 h-4 mr-2" /> Добавить</Button>
                 </CardContent>
               </Card>
               <Card className="lg:col-span-2">
                 <CardContent className="pt-6">
-                  {clientsLoading ? (
-                    <div className="space-y-4">
-                      <Skeleton className="h-10 w-full" />
-                      <Skeleton className="h-40 w-full" />
-                    </div>
-                  ) : (
+                  {clientsLoading ? <Skeleton className="h-64 w-full" /> : (
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -326,12 +298,12 @@ export default function AdminDashboard() {
                             <TableRow key={c.id}>
                               <TableCell className="font-medium">{c.firstName} {c.lastName}</TableCell>
                               <TableCell>
-                                <div className="text-sm">{c.email}</div>
+                                <div className="text-xs">{c.email}</div>
                                 <div className="text-xs text-muted-foreground">{c.phone}</div>
                               </TableCell>
                               <TableCell className="text-right">
-                                <Button variant="ghost" size="icon" onClick={() => handleDelete("clients", c.id)}>
-                                  <Trash2 className="w-4 h-4 text-destructive" />
+                                <Button variant="ghost" size="icon" onClick={() => handleDelete("clients", c.id)} className="hover:text-destructive">
+                                  <Trash2 className="w-4 h-4" />
                                 </Button>
                               </TableCell>
                             </TableRow>
@@ -346,18 +318,18 @@ export default function AdminDashboard() {
 
           <TabsContent value="services" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card>
+              <Card className="h-fit">
                 <CardHeader><CardTitle>Добавить услугу</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label>Название</Label>
-                    <Input placeholder="Напр: Стрижка кроп" value={newServiceName} onChange={e => setNewServiceName(e.target.value)} />
+                    <Input placeholder="Напр: Стрижка" value={newServiceName} onChange={e => setNewServiceName(e.target.value)} className="h-11" />
                   </div>
                   <div className="space-y-2">
                     <Label>Цена (₽)</Label>
-                    <Input type="number" placeholder="Напр: 1500" value={newServicePrice} onChange={e => setNewServicePrice(e.target.value)} />
+                    <Input type="number" placeholder="1500" value={newServicePrice} onChange={e => setNewServicePrice(e.target.value)} className="h-11" />
                   </div>
-                  <Button className="w-full" onClick={handleAddService}><Plus className="w-4 h-4 mr-2" /> Добавить</Button>
+                  <Button className="w-full h-11 active:scale-95 transition-transform" onClick={handleAddService}><Plus className="w-4 h-4 mr-2" /> Добавить</Button>
                 </CardContent>
               </Card>
               <Card className="lg:col-span-2">
@@ -377,8 +349,8 @@ export default function AdminDashboard() {
                               <TableCell className="font-medium">{s.name}</TableCell>
                               <TableCell>{s.price} ₽</TableCell>
                               <TableCell className="text-right">
-                                <Button variant="ghost" size="icon" onClick={() => handleDelete("services", s.id)}>
-                                  <Trash2 className="w-4 h-4 text-destructive" />
+                                <Button variant="ghost" size="icon" onClick={() => handleDelete("services", s.id)} className="hover:text-destructive">
+                                  <Trash2 className="w-4 h-4" />
                                 </Button>
                               </TableCell>
                             </TableRow>
@@ -393,27 +365,27 @@ export default function AdminDashboard() {
 
           <TabsContent value="team" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-               <Card>
+               <Card className="h-fit">
                 <CardHeader><CardTitle>Новый мастер</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Имя и Фамилия</Label>
-                    <Input placeholder="Александр Петров" value={newBarberName} onChange={e => setNewBarberName(e.target.value)} />
+                    <Label>Имя</Label>
+                    <Input placeholder="Александр..." value={newBarberName} onChange={e => setNewBarberName(e.target.value)} className="h-11" />
                   </div>
-                  <Button className="w-full" onClick={handleAddBarber}><Plus className="w-4 h-4 mr-2" /> Добавить</Button>
+                  <Button className="w-full h-11 active:scale-95 transition-transform" onClick={handleAddBarber}><Plus className="w-4 h-4 mr-2" /> Добавить</Button>
                 </CardContent>
               </Card>
               <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                {barbersLoading ? Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-xl" />) : (
+                {barbersLoading ? Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />) : (
                   barbers?.map((barber: any) => (
-                    <Card key={barber.id} className="hover:bg-accent/5 transition-colors">
+                    <Card key={barber.id} className="hover:bg-accent/5 transition-colors border shadow-sm">
                       <CardContent className="p-6 flex items-center justify-between">
                         <div>
                           <h3 className="font-bold">{barber.name}</h3>
                           <p className="text-xs text-muted-foreground">{barber.role}</p>
                         </div>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete("barbers", barber.id)}>
-                          <Trash2 className="w-4 h-4 text-destructive" />
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete("barbers", barber.id)} className="hover:text-destructive">
+                          <Trash2 className="w-4 h-4" />
                         </Button>
                       </CardContent>
                     </Card>
@@ -427,22 +399,32 @@ export default function AdminDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>Настройка изображений</CardTitle>
+                <CardDescription>Изменения применяются мгновенно после сохранения.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-8">
+              <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <Label>Фон Hero</Label>
-                  <Input placeholder="URL изображения" value={heroBgUrl} onChange={e => setHeroBgUrl(e.target.value)} />
+                  <Label>Фон главной страницы (Hero)</Label>
+                  <Input placeholder="URL изображения" value={heroBgUrl} onChange={e => setHeroBgUrl(e.target.value)} className="h-11" />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {[setCtaImg1, setCtaImg2, setCtaImg3, setCtaImg4].map((setter, idx) => (
+                  {ctaImages.map((url, idx) => (
                     <div key={idx} className="space-y-2">
-                      <Label>Блок ИИ: Фото {idx + 1}</Label>
-                      <Input value={[ctaImg1, ctaImg2, ctaImg3, ctaImg4][idx]} onChange={e => setter(e.target.value)} placeholder="URL фото" />
+                      <Label>Изображение в блоке #{idx + 1}</Label>
+                      <Input 
+                        value={url} 
+                        onChange={e => {
+                          const newImgs = [...ctaImages];
+                          newImgs[idx] = e.target.value;
+                          setCtaImages(newImgs);
+                        }} 
+                        placeholder="URL фото" 
+                        className="h-11"
+                      />
                     </div>
                   ))}
                 </div>
-                <Button className="w-full bg-green-600 hover:bg-green-700 h-12 text-white" onClick={handleSaveContent} disabled={isSavingContent}>
-                  {isSavingContent ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                <Button className="w-full bg-primary hover:bg-primary/90 h-14 text-lg font-bold shadow-lg shadow-primary/20 active:scale-95 transition-transform" onClick={handleSaveContent} disabled={isSavingContent}>
+                  {isSavingContent ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Save className="w-5 h-5 mr-2" />}
                   {isSavingContent ? "Сохранение..." : "Сохранить изменения"}
                 </Button>
               </CardContent>

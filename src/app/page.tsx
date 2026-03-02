@@ -10,6 +10,7 @@ import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { doc } from "firebase/firestore";
+import { useMemo } from "react";
 
 export default function Home() {
   const db = useFirestore();
@@ -20,18 +21,24 @@ export default function Home() {
 
   const { data: siteContent } = useDoc(siteContentRef);
 
-  const defaultHeroBg = PlaceHolderImages.find(img => img.id === "hero-bg")?.imageUrl;
-  const heroSubjectImg = PlaceHolderImages.find(img => img.id === "hero-barber")?.imageUrl;
-  const defaultCta1 = PlaceHolderImages.find(img => img.id === "cta-haircut-1")?.imageUrl;
-  const defaultCta2 = PlaceHolderImages.find(img => img.id === "cta-haircut-2")?.imageUrl;
-  const defaultCta3 = PlaceHolderImages.find(img => img.id === "cta-haircut-3")?.imageUrl;
-  const defaultCta4 = PlaceHolderImages.find(img => img.id === "cta-haircut-4")?.imageUrl;
+  // Мемоизируем выбор изображений для предотвращения лишних вычислений при рендере
+  const images = useMemo(() => {
+    const defaultHeroBg = PlaceHolderImages.find(img => img.id === "hero-bg")?.imageUrl;
+    const heroSubjectImg = PlaceHolderImages.find(img => img.id === "hero-barber")?.imageUrl;
+    const defaultCta1 = PlaceHolderImages.find(img => img.id === "cta-haircut-1")?.imageUrl;
+    const defaultCta2 = PlaceHolderImages.find(img => img.id === "cta-haircut-2")?.imageUrl;
+    const defaultCta3 = PlaceHolderImages.find(img => img.id === "cta-haircut-3")?.imageUrl;
+    const defaultCta4 = PlaceHolderImages.find(img => img.id === "cta-haircut-4")?.imageUrl;
 
-  const heroBg = siteContent?.heroBgUrl || defaultHeroBg;
-  const cta1 = siteContent?.ctaImages?.[0] || defaultCta1;
-  const cta2 = siteContent?.ctaImages?.[1] || defaultCta2;
-  const cta3 = siteContent?.ctaImages?.[2] || defaultCta3;
-  const cta4 = siteContent?.ctaImages?.[3] || defaultCta4;
+    return {
+      heroBg: siteContent?.heroBgUrl || defaultHeroBg,
+      heroSubject: heroSubjectImg,
+      cta1: siteContent?.ctaImages?.[0] || defaultCta1,
+      cta2: siteContent?.ctaImages?.[1] || defaultCta2,
+      cta3: siteContent?.ctaImages?.[2] || defaultCta3,
+      cta4: siteContent?.ctaImages?.[3] || defaultCta4,
+    };
+  }, [siteContent]);
 
   return (
     <div className="min-h-screen bg-background relative">
@@ -40,15 +47,22 @@ export default function Home() {
       <main>
         <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden min-h-[95vh] flex items-center">
           <div className="absolute inset-0 -z-20">
-            {heroBg ? (
-               <Image src={heroBg} alt="Background" fill className="object-cover opacity-20 brightness-[0.2]" priority />
+            {images.heroBg ? (
+               <Image 
+                src={images.heroBg} 
+                alt="Background" 
+                fill 
+                className="object-cover opacity-20 brightness-[0.2]" 
+                priority // Важно для скорости: загружаем фон сразу
+                sizes="100vw"
+               />
             ) : <div className="absolute inset-0 bg-muted/20" />}
             <div className="absolute inset-0 bg-gradient-to-b from-background via-transparent to-background"></div>
           </div>
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
             <div className="flex flex-col lg:flex-row items-center gap-16 text-center lg:text-left">
-              <div className="flex-1 z-10">
+              <div className="flex-1 z-10 animate-in fade-in slide-in-from-left duration-700">
                 <div className="inline-flex items-center gap-2 bg-primary/20 border border-primary/30 rounded-full px-4 py-1.5 text-primary-foreground text-sm font-semibold mb-6 backdrop-blur-sm">
                   <Sparkles className="w-4 h-4 text-accent" />
                   Уход за волосами с помощью ИИ
@@ -62,27 +76,28 @@ export default function Home() {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                   <Link href="/booking">
-                    <Button size="lg" className="rounded-full px-10 h-14 text-lg font-bold w-full sm:w-auto shadow-lg shadow-primary/25">
+                    <Button size="lg" className="rounded-full px-10 h-14 text-lg font-bold w-full sm:w-auto shadow-lg shadow-primary/25 transition-transform hover:scale-105 active:scale-95">
                       Записаться онлайн
                     </Button>
                   </Link>
                   <Link href="/visualizer">
-                    <Button size="lg" variant="outline" className="rounded-full px-10 h-14 text-lg font-bold border-accent text-accent hover:bg-accent hover:text-white transition-all w-full sm:w-auto backdrop-blur-sm">
+                    <Button size="lg" variant="outline" className="rounded-full px-10 h-14 text-lg font-bold border-accent text-accent hover:bg-accent hover:text-white transition-all w-full sm:w-auto backdrop-blur-sm active:scale-95">
                       ИИ-стилист
                     </Button>
                   </Link>
                 </div>
               </div>
 
-              {heroSubjectImg && (
-                <div className="flex-1 relative z-10 hidden lg:block">
+              {images.heroSubject && (
+                <div className="flex-1 relative z-10 hidden lg:block animate-in fade-in slide-in-from-right duration-700">
                   <div className="relative aspect-square max-w-md mx-auto rounded-[3rem] overflow-hidden border-8 border-white/5 shadow-2xl transition-transform hover:scale-105 duration-700">
                     <Image 
-                      src={heroSubjectImg} 
+                      src={images.heroSubject} 
                       alt="Premium Barber Service" 
                       fill 
                       className="object-cover"
                       priority
+                      sizes="(max-width: 1024px) 100vw, 50vw"
                       data-ai-hint="professional barber"
                     />
                   </div>
@@ -125,7 +140,7 @@ export default function Home() {
                 <h2 className="text-4xl md:text-6xl font-headline font-bold mb-8">Готовы к новому образу?</h2>
                 <p className="text-white/80 text-xl mb-10 leading-relaxed max-w-2xl">Наш продвинутый ИИ-анализатор использует ваше фото, чтобы предложить наиболее подходящие прически.</p>
                 <Link href="/visualizer">
-                  <Button size="lg" variant="secondary" className="rounded-full px-12 h-16 text-xl font-bold bg-white text-primary hover:bg-white/90 transition-transform hover:scale-105">
+                  <Button size="lg" variant="secondary" className="rounded-full px-12 h-16 text-xl font-bold bg-white text-primary hover:bg-white/90 transition-transform hover:scale-105 active:scale-95">
                     Запустить ИИ-стилиста
                   </Button>
                 </Link>
@@ -133,12 +148,12 @@ export default function Home() {
               <div className="flex-1 w-full max-w-md lg:max-w-none relative z-10">
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-6 pt-12">
-                    {cta1 && <div className="rounded-3xl overflow-hidden aspect-square relative border-4 border-white/10 shadow-2xl"><Image src={cta1} fill alt="CTA 1" className="object-cover" data-ai-hint="modern haircut" /></div>}
-                    {cta2 && <div className="rounded-3xl overflow-hidden aspect-square relative border-4 border-white/10 shadow-2xl"><Image src={cta2} fill alt="CTA 2" className="object-cover" data-ai-hint="beard grooming" /></div>}
+                    {images.cta1 && <div className="rounded-3xl overflow-hidden aspect-square relative border-4 border-white/10 shadow-2xl hover:scale-105 transition-transform"><Image src={images.cta1} fill alt="CTA 1" className="object-cover" data-ai-hint="modern haircut" /></div>}
+                    {images.cta2 && <div className="rounded-3xl overflow-hidden aspect-square relative border-4 border-white/10 shadow-2xl hover:scale-105 transition-transform"><Image src={images.cta2} fill alt="CTA 2" className="object-cover" data-ai-hint="beard grooming" /></div>}
                   </div>
                   <div className="space-y-6">
-                    {cta3 && <div className="rounded-3xl overflow-hidden aspect-square relative border-4 border-white/10 shadow-2xl"><Image src={cta3} fill alt="CTA 3" className="object-cover" data-ai-hint="classic fade" /></div>}
-                    {cta4 && <div className="rounded-3xl overflow-hidden aspect-square relative border-4 border-white/10 shadow-2xl"><Image src={cta4} fill alt="CTA 4" className="object-cover" data-ai-hint="barber cutting" /></div>}
+                    {images.cta3 && <div className="rounded-3xl overflow-hidden aspect-square relative border-4 border-white/10 shadow-2xl hover:scale-105 transition-transform"><Image src={images.cta3} fill alt="CTA 3" className="object-cover" data-ai-hint="classic fade" /></div>}
+                    {images.cta4 && <div className="rounded-3xl overflow-hidden aspect-square relative border-4 border-white/10 shadow-2xl hover:scale-105 transition-transform"><Image src={images.cta4} fill alt="CTA 4" className="object-cover" data-ai-hint="barber cutting" /></div>}
                   </div>
                 </div>
               </div>
