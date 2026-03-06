@@ -22,7 +22,7 @@
     git add .
     git commit -m "Initial commit"
     git branch -M main
-    git remote add origin https://github.com/ВАШ_ЛОГИН/ВАШ_РЕПОЗИТОРИЙ.git
+    git remote add origin https://github.com/WoodRight/CRM_BARBER_AI2.git
     git push -u origin main
     ```
 3.  **Firebase Console**:
