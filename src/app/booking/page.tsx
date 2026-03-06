@@ -37,7 +37,6 @@ import { ru } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { aiHairstyleTryOn } from "@/ai/flows/ai-hairstyle-try-on";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, addDoc, serverTimestamp, query, orderBy, doc, updateDoc, increment } from "firebase/firestore";
 
@@ -57,7 +56,7 @@ export default function BookingPage() {
   const [step, setStep] = useState(1);
   const [selectedService, setSelectedService] = useState<any>(null);
   const [selectedBarber, setSelectedBarber] = useState<any>(null);
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [date, setDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -81,6 +80,10 @@ export default function BookingPage() {
 
   const { toast } = useToast();
   const db = useFirestore();
+
+  useEffect(() => {
+    setDate(new Date());
+  }, []);
 
   const servicesQuery = useMemoFirebase(() => {
     if (!db) return null;
@@ -260,7 +263,7 @@ export default function BookingPage() {
             <h2 className="text-2xl font-headline font-bold">Выберите мастера</h2>
             <div className="grid gap-4">
               {barbersLoading ? (
-                Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)
+                Array(3).fill(0).map((_, i) => <Skeleton className="h-20 w-full rounded-xl" />)
               ) : (
                 barbers?.map((b) => (
                   <Card 
@@ -341,7 +344,7 @@ export default function BookingPage() {
                  <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10 text-sm space-y-2">
                     <p className="font-bold text-primary uppercase text-[10px]">Резюме:</p>
                     <div className="flex justify-between font-medium"><span>{selectedService?.name}</span><span>{selectedService?.price} ₽</span></div>
-                    <div className="flex justify-between text-muted-foreground"><span>{format(date!, 'd MMMM', { locale: ru })} в {selectedTime}</span><span>{selectedBarber?.name}</span></div>
+                    <div className="flex justify-between text-muted-foreground"><span>{date && format(date, 'd MMMM', { locale: ru })} в {selectedTime}</span><span>{selectedBarber?.name}</span></div>
                  </div>
                </CardContent>
              </Card>

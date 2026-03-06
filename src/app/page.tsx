@@ -10,16 +10,22 @@ import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { doc } from "firebase/firestore";
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 
 export default function Home() {
   const db = useFirestore();
+  const [currentYear, setCurrentYear] = useState<number | null>(null);
+  
   const siteContentRef = useMemoFirebase(() => {
     if (!db) return null;
     return doc(db, "settings", "site-content");
   }, [db]);
 
   const { data: siteContent } = useDoc(siteContentRef);
+
+  useEffect(() => {
+    setCurrentYear(new Date().getFullYear());
+  }, []);
 
   // Мемоизируем выбор изображений для предотвращения лишних вычислений при рендере
   const images = useMemo(() => {
@@ -71,6 +77,7 @@ export default function Home() {
                   Ваш уникальный образ, <br />
                   <span className="text-accent">доведенный до совершенства ИИ.</span>
                 </h1>
+                <h2 className="sr-only">Окунитесь в будущее барбершопов. Примерьте стили виртуально с нашим ИИ-стилистом и запишитесь на стрижку за считанные секунды.</h2>
                 <p className="text-lg md:text-xl text-white/70 mb-8 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
                   Окунитесь в будущее барбершопов. Примерьте стили виртуально с нашим ИИ-стилистом и запишитесь на стрижку за считанные секунды.
                 </p>
@@ -214,7 +221,7 @@ export default function Home() {
             </div>
             
             <div className="pt-8 border-t border-border/50 text-center">
-              <p className="text-muted-foreground text-xs">&copy; {new Date().getFullYear()} BarBerTok Premium. Все права защищены.</p>
+              <p className="text-muted-foreground text-xs">&copy; {currentYear || '...'} BarBerTok Premium. Все права защищены.</p>
             </div>
           </div>
         </footer>
