@@ -15,9 +15,9 @@
     },
     {
       "id": "cta-haircut-1",
-      "description": "Современный текстурированный кроп",
-      "imageUrl": "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?q=80&w=600&auto=format&fit=crop",
-      "imageHint": "modern haircut"
+      "description": "Инструменты барбера (ножницы и расчески)",
+      "imageUrl": "https://images.unsplash.com/photo-1621605815971-fbc98d665033?q=80&w=600&auto=format&fit=crop",
+      "imageHint": "barber tools"
     },
     {
       "id": "cta-haircut-2",
