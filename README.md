@@ -35,25 +35,31 @@ git remote add origin https://github.com/WoodRight/CRM_BARBER_AI2.git
 git push -u origin main
 ```
 
-*Примечание: Если `git remote add` выдает ошибку, что origin уже существует, введите: `git remote set-url origin https://github.com/WoodRight/CRM_BARBER_AI2.git`*
+## 3. Как сменить репозиторий в настройках
 
-## 3. Деплой в Firebase App Hosting
-Это лучший способ для автоматического деплоя Next.js приложений.
+### Если нужно сменить URL в Git (терминал):
+Если вы ошиблись с адресом или создали новый репозиторий, введите команду:
+```bash
+git remote set-url origin https://github.com/WoodRight/CRM_BARBER_AI2.git
+git push -u origin main
+```
 
-1.  **Firebase Console**:
-    *   Зайдите в раздел **App Hosting**.
-    *   Нажмите **Get Started** и подключите ваш GitHub репозиторий `WoodRight/CRM_BARBER_AI2`.
-    *   Выберите настройки по умолчанию. Firebase сам определит Next.js и начнет сборку.
-2.  **Переменные окружения**:
-    *   В настройках бэкенда App Hosting добавьте переменную `AILAB_API_KEY`.
+### Если нужно сменить репозиторий в Firebase App Hosting:
+1.  Перейдите в [Firebase Console](https://console.firebase.google.com/).
+2.  Выберите ваш проект.
+3.  В левом меню выберите **App Hosting**.
+4.  Нажмите на кнопку **"Создать бэкенд"** (или выберите существующий).
+5.  В процессе настройки выберите ваш новый репозиторий `WoodRight/CRM_BARBER_AI2` из списка подключенных аккаунтов GitHub.
+
+## 4. Деплой в Firebase App Hosting
+1.  **Firebase Console**: Подключите ваш GitHub репозиторий `WoodRight/CRM_BARBER_AI2`.
+2.  **Переменные окружения**: В настройках бэкенда App Hosting добавьте переменную `AILAB_API_KEY`.
 3.  **Безопасность**:
-    *   Включите **Authentication** (метод Email/Password).
-    *   Создайте базу данных **Firestore** в тестовом режиме.
+    *   Включите **Authentication** (Email/Password).
+    *   Создайте **Firestore** в тестовом режиме.
 
-## 4. Как стать администратором
+## 5. Как стать администратором
 1.  Зарегистрируйтесь на странице `/admin/login`.
-2.  Вы увидите красный блок с вашим **UID**. Скопируйте его.
+2.  Скопируйте ваш **UID** из красного блока.
 3.  В Firestore создайте коллекцию `roles_admin`.
-4.  Создайте документ, где **ID документа** — это ваш UID.
-5.  Внутри документа добавьте поле: `{ "role": "admin" }`.
-6.  Обновите страницу `/admin`.
+4.  Создайте документ с ID = вашему UID и полем `{ "role": "admin" }`.
