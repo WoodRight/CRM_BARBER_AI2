@@ -27,7 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { addDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 export default function AdminDashboard() {
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
   const db = useFirestore();
   const { toast } = useToast();
   
@@ -44,25 +44,26 @@ export default function AdminDashboard() {
     phone: ""
   });
 
+  // Оптимизированные запросы: запускаются только когда пользователь авторизован
   const bookingsQuery = useMemoFirebase(() => {
-    if (!db) return null;
+    if (!db || !user || isUserLoading) return null;
     return query(collection(db, "bookings"), orderBy("createdAt", "desc"), limit(50));
-  }, [db]);
+  }, [db, user, isUserLoading]);
 
   const clientsQuery = useMemoFirebase(() => {
-    if (!db) return null;
+    if (!db || !user || isUserLoading) return null;
     return query(collection(db, "clients"), orderBy("firstName", "asc"));
-  }, [db]);
+  }, [db, user, isUserLoading]);
 
   const servicesQuery = useMemoFirebase(() => {
-    if (!db) return null;
+    if (!db || !user || isUserLoading) return null;
     return query(collection(db, "services"), orderBy("createdAt", "desc"));
-  }, [db]);
+  }, [db, user, isUserLoading]);
 
   const barbersQuery = useMemoFirebase(() => {
-    if (!db) return null;
+    if (!db || !user || isUserLoading) return null;
     return query(collection(db, "barbers"), orderBy("createdAt", "desc"));
-  }, [db]);
+  }, [db, user, isUserLoading]);
 
   const { data: bookings, isLoading: bookingsLoading } = useCollection(bookingsQuery);
   const { data: services, isLoading: servicesLoading } = useCollection(servicesQuery);
@@ -183,6 +184,11 @@ export default function AdminDashboard() {
                         </TableCell>
                       </TableRow>
                     ))}
+                    {(!bookings || bookings.length === 0) && !bookingsLoading && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-20 text-muted-foreground">Записей пока нет</TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               )}
