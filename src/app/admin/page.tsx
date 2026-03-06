@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
 import { collection, query, orderBy, limit, serverTimestamp, doc } from "firebase/firestore";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -16,15 +16,16 @@ import {
   Users, 
   Calendar, 
   Scissors, 
-  Plus,
   Trash2,
-  UserPlus,
   Star,
   LayoutDashboard,
-  UserCircle
+  UserCircle,
+  Settings,
+  Image as ImageIcon,
+  Save
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { addDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 export default function AdminDashboard() {
   const { user, isUserLoading } = useUser();
@@ -44,7 +45,25 @@ export default function AdminDashboard() {
     phone: ""
   });
 
-  // Оптимизированные запросы: запускаются только когда пользователь авторизован
+  // Настройки сайта
+  const [heroBg, setHeroBg] = useState("");
+  const [ctaImages, setCtaImages] = useState(["", "", "", ""]);
+
+  const siteContentRef = useMemoFirebase(() => {
+    if (!db) return null;
+    return doc(db, "settings", "site-content");
+  }, [db]);
+
+  const { data: siteContent, isLoading: siteContentLoading } = useDoc(siteContentRef);
+
+  useEffect(() => {
+    if (siteContent) {
+      setHeroBg(siteContent.heroBgUrl || "");
+      setCtaImages(siteContent.ctaImages || ["", "", "", ""]);
+    }
+  }, [siteContent]);
+
+  // Оптимизированные запросы
   const bookingsQuery = useMemoFirebase(() => {
     if (!db || !user || isUserLoading) return null;
     return query(collection(db, "bookings"), orderBy("createdAt", "desc"), limit(50));
@@ -109,6 +128,16 @@ export default function AdminDashboard() {
     toast({ title: "Клиент добавлен" });
   };
 
+  const handleSaveSettings = () => {
+    if (!db || !siteContentRef) return;
+    setDocumentNonBlocking(siteContentRef, {
+      heroBgUrl: heroBg,
+      ctaImages: ctaImages,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    toast({ title: "Настройки сохранены" });
+  };
+
   const handleDelete = (collName: string, id: string) => {
     if (!db) return;
     deleteDocumentNonBlocking(doc(db, collName, id));
@@ -146,9 +175,13 @@ export default function AdminDashboard() {
             <TabsTrigger value="team" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-white transition-all">
               <UserCircle className="w-4 h-4 mr-2" /> Команда
             </TabsTrigger>
+            <TabsTrigger value="settings" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-white transition-all">
+              <Settings className="w-4 h-4 mr-2" /> Настройки
+            </TabsTrigger>
           </TabsList>
         </div>
 
+        {/* Записи */}
         <TabsContent value="bookings" className="animate-in fade-in slide-in-from-bottom-4">
            <Card className="rounded-[2rem] border-border shadow-lg overflow-hidden">
             <CardHeader className="bg-muted/30 border-b border-border p-8">
@@ -164,7 +197,7 @@ export default function AdminDashboard() {
                       <TableHead>Услуга</TableHead>
                       <TableHead>Мастер</TableHead>
                       <TableHead>Время</TableHead>
-                      <TableHead className="text-right px-8">Удалить</TableHead>
+                      <TableHead className="text-right px-8">Действие</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -184,11 +217,6 @@ export default function AdminDashboard() {
                         </TableCell>
                       </TableRow>
                     ))}
-                    {(!bookings || bookings.length === 0) && !bookingsLoading && (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-20 text-muted-foreground">Записей пока нет</TableCell>
-                      </TableRow>
-                    )}
                   </TableBody>
                 </Table>
               )}
@@ -196,6 +224,7 @@ export default function AdminDashboard() {
           </Card>
         </TabsContent>
 
+        {/* Клиенты */}
         <TabsContent value="clients" className="animate-in fade-in slide-in-from-bottom-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <Card className="h-fit rounded-[2rem] border-border shadow-lg">
@@ -233,6 +262,7 @@ export default function AdminDashboard() {
           </div>
         </TabsContent>
 
+        {/* Услуги */}
         <TabsContent value="services" className="animate-in fade-in slide-in-from-bottom-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <Card className="h-fit rounded-[2rem] border-border shadow-lg">
@@ -270,6 +300,7 @@ export default function AdminDashboard() {
           </div>
         </TabsContent>
 
+        {/* Команда */}
         <TabsContent value="team" className="animate-in fade-in slide-in-from-bottom-4">
            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
              <Card className="h-fit rounded-[2rem] border-border shadow-lg">
@@ -317,6 +348,61 @@ export default function AdminDashboard() {
               )}
             </div>
           </div>
+        </TabsContent>
+
+        {/* Настройки */}
+        <TabsContent value="settings" className="animate-in fade-in slide-in-from-bottom-4">
+          <Card className="rounded-[2rem] border-border shadow-lg">
+            <CardHeader className="p-8">
+              <CardTitle className="text-2xl flex items-center gap-2"><ImageIcon className="w-6 h-6" /> Контент главной страницы</CardTitle>
+              <CardDescription>Измените фотографии на главной странице. Используйте прямые ссылки на изображения (Unsplash, Imgur и др.)</CardDescription>
+            </CardHeader>
+            <CardContent className="p-8 space-y-8">
+               <div className="space-y-4">
+                 <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Главный фон (Hero Background)</Label>
+                 <div className="flex gap-4">
+                   <Input 
+                    placeholder="https://images.unsplash.com/..." 
+                    value={heroBg} 
+                    onChange={e => setHeroBg(e.target.value)} 
+                    className="h-12 rounded-xl flex-1"
+                   />
+                   <div className="w-12 h-12 rounded-xl bg-muted overflow-hidden border">
+                     {heroBg && <img src={heroBg} className="w-full h-full object-cover" alt="Preview" />}
+                   </div>
+                 </div>
+               </div>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                 {[1, 2, 3, 4].map((num, idx) => (
+                   <div key={num} className="space-y-4">
+                     <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Фото в блоке #{num}</Label>
+                     <div className="flex gap-4">
+                       <Input 
+                        placeholder="https://images.unsplash.com/..." 
+                        value={ctaImages[idx]} 
+                        onChange={e => {
+                          const newImgs = [...ctaImages];
+                          newImgs[idx] = e.target.value;
+                          setCtaImages(newImgs);
+                        }} 
+                        className="h-12 rounded-xl flex-1"
+                       />
+                       <div className="w-12 h-12 rounded-xl bg-muted overflow-hidden border">
+                         {ctaImages[idx] && <img src={ctaImages[idx]} className="w-full h-full object-cover" alt={`CTA ${num}`} />}
+                       </div>
+                     </div>
+                   </div>
+                 ))}
+               </div>
+
+               <div className="pt-8 border-t">
+                 <Button className="h-14 px-8 rounded-2xl font-bold bg-green-600 hover:bg-green-700 shadow-lg shadow-green-500/20" onClick={handleSaveSettings}>
+                   <Save className="w-5 h-5 mr-2" /> Сохранить изменения
+                 </Button>
+               </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

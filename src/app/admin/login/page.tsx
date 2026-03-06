@@ -104,7 +104,7 @@ export default function AdminLoginPage() {
             <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-primary">
               <ShieldCheck className="w-8 h-8" />
             </div>
-            <CardTitle className="text-3xl font-headline font-bold">Admin.Connect</CardTitle>
+            <CardTitle className="text-3xl font-headline font-bold">Вход в систему</CardTitle>
             <CardDescription>Управление вашей парикмахерской</CardDescription>
           </CardHeader>
           <CardContent className="p-10 pt-4">

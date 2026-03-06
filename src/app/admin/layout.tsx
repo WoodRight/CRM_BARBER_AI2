@@ -6,7 +6,7 @@ import { useUser, useFirestore } from "@/firebase";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
-import { Loader2, LayoutDashboard, Calendar, Users, Scissors, LogOut, Menu, X } from "lucide-react";
+import { Loader2, LayoutDashboard, Scissors, LogOut, Menu, X, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOut } from "firebase/auth";
 import { useAuth } from "@/firebase";
@@ -68,7 +68,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   const menuItems = [
     { name: "Дашборд", href: "/admin", icon: LayoutDashboard },
-    { name: "На сайт", href: "/", icon: Scissors },
+    { name: "Сайт", href: "/", icon: Scissors },
   ];
 
   return (
@@ -80,7 +80,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <div className="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
               <Scissors className="text-white w-6 h-6" />
             </div>
-            <span className="text-xl font-headline font-bold tracking-tight">Admin.Panel</span>
+            <span className="text-xl font-headline font-bold tracking-tight">Админ.Панель</span>
           </Link>
         </div>
         
@@ -118,7 +118,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <Scissors className="text-white w-4 h-4" />
             </div>
-            <span className="font-headline font-bold">Admin</span>
+            <span className="font-headline font-bold">Админ</span>
          </div>
          <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
            {isMobileMenuOpen ? <X /> : <Menu />}
